@@ -1,0 +1,10 @@
+{
+  "from": "noreply@apl.com",
+  "to": "",
+  "subject": "Weekly IRA & CC Snapshot Report",
+  "template": {
+    "title": "Weekly IRA & CC Performance Report",
+    "intro": "Here are the latest IRA & CC percentages across all branches:",
+    "footer": "This is an automated report. Please do not reply to this email."
+  }
+}

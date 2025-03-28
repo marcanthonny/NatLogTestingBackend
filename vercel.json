@@ -1,0 +1,23 @@
+{
+  "name": "excel-automation-backend",
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "index.js"
+    }
+  ],
+  "github": {
+    "enabled": true,
+    "silent": true
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
