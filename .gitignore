@@ -95,3 +95,4 @@ tmp/
 # Uploads directory - ignore contents but keep directory
 /uploads/*
 !/uploads/.gitkeep
+.vercel

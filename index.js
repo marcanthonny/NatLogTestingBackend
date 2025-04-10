@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 5000;
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Enhanced error handling middleware
 app.use((err, req, res, next) => {
