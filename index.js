@@ -77,25 +77,25 @@ try {
   process.exit(1); // Exit if we can't set up the required directory
 }
 
-// Add uploads directory path configuration
+// Add uploads directory path configuration with separate subdirectories
 const uploadsDir = path.join(__dirname, 'uploads');
-console.log('Uploads directory:', uploadsDir);
+const iraUploadsDir = path.join(uploadsDir, 'ira-cc');
+const excelEditorUploadsDir = path.join(uploadsDir, 'excel-editor');
 
-// Ensure uploads directory exists
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('Created uploads directory');
-}
-
-// Add middleware to attach snapshots directory to all requests
-app.use((req, res, next) => {
-  req.snapshotsDir = snapshotsDir;
-  next();
+// Ensure upload directories exist
+[iraUploadsDir, excelEditorUploadsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log('Created directory:', dir);
+  }
 });
 
-// Add uploads directory to request object
+// Add middleware to attach directory paths to requests
 app.use((req, res, next) => {
+  req.snapshotsDir = snapshotsDir;
   req.uploadsDir = uploadsDir;
+  req.iraUploadsDir = iraUploadsDir;
+  req.excelEditorUploadsDir = excelEditorUploadsDir;
   next();
 });
 
@@ -108,8 +108,14 @@ app.use((req, res, next) => {
 // Import and register routes - FIXED: ensure this is before static file serving
 const snapshotsRouter = require('./routes/snapshots');
 
+// Import the Excel Editor routes
+const excelEditorRouter = require('./routes/excelEditor');
+
 // API Routes - make sure these are correctly mounted
 app.use('/api/snapshots', snapshotsRouter);
+
+// Mount the Excel Editor routes BEFORE the static file serving
+app.use('/api/excel-editor', excelEditorRouter);
 
 // Add a test endpoint to verify API is working
 app.get('/api/test', (req, res) => {
