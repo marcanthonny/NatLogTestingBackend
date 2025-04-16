@@ -1,23 +1,23 @@
 {
-  "name": "aplnatlog-backend",
   "version": 2,
   "builds": [
     {
-      "src": "restart-server.js",
+      "src": "index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "restart-server.js"
+      "dest": "index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "index.js"
     }
   ],
-  "github": {
-    "enabled": true,
-    "silent": true
-  },
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "MONGODB_URL": "mongodb+srv://vercel-admin-user:7C4qIsJUk4pTTkyX@cluster0.2kanvas.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
   }
 }

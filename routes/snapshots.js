@@ -1,326 +1,187 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const router = express.Router();
-const { createExcelWorkbook } = require('../utils/excelExporter');
-const { generateEmailContent } = require('../utils/emailGenerator');
-const ExcelJS = require('exceljs');
-const nodemailer = require('nodemailer');
-const { processFileData } = require('../utils/fileProcessor');
-const { exportToExcel } = require('../utils/excelExporter');
+const axios = require('axios');
+const mongoose = require('mongoose');
+const { migrateToMongoDB, checkMongoDBStatus } = require('../utils/dbMigration');
+const Snapshot = require('../models/Snapshot');
+const { migrateSnapshots } = require('../utils/migrateSnapshots');
 
-// List of valid branches
-const VALID_BRANCHES = [
-  '1982 - PT. APL JAYAPURA',
-  '1981 - PT. APL KUPANG',
-  '1980 - PT. APL DENPASAR',
-  '1972 - PT. APL PONTIANAK',
-  '1971 - PT. APL SAMARINDA',
-  '1970 - PT. APL BANJARMASIN',
-  '1962 - PT. APL PALU',
-  '1961 - PT. APL MAKASSAR',
-  '1957 - PT. APL BANDAR LAMPUNG',
-  '1956 - PT. APL PALEMBANG',
-  '1955 - PT. APL JAMBI',
-  '1954 - PT. APL BATAM',
-  '1953 - PT. APL PEKANBARU',
-  '1952 - PT. APL PADANG',
-  '1951 - PT. APL MEDAN',
-  '1940 - PT. APL SURABAYA',
-  '1932 - PT. APL YOGYAKARTA',
-  '1930 - PT. APL SEMARANG',
-  '1922 - PT. APL BANDUNG',
-  '1921 - PT. APL TANGERANG',
-  '1920 - PT. APL BOGOR',
-  '1910 - PT. APL JAKARTA 1',
-  '1960 - PT. APL MANADO'
-];
+// Use MongoDB Atlas URL from environment variable
+const MONGODB_URL = process.env.MONGODB_URL;
 
-// Middleware to ensure snapshots directory exists
-router.use((req, res, next) => {
+// New helper function to ensure snapshots directory exists
+const ensureSnapshotsDir = async () => {
   const snapshotsDir = path.join(__dirname, '../snapshots');
-  const indexPath = path.join(snapshotsDir, 'index.json');
-  
   try {
-    if (!fs.existsSync(snapshotsDir)) {
-      fs.mkdirSync(snapshotsDir, { recursive: true });
-    }
-    if (!fs.existsSync(indexPath)) {
-      fs.writeFileSync(indexPath, '[]', 'utf8');
-    }
-    req.snapshotsDir = snapshotsDir;
-    req.indexPath = indexPath;
-    next();
-  } catch (error) {
-    next(error);
+    await fs.access(snapshotsDir);
+  } catch {
+    await fs.mkdir(snapshotsDir, { recursive: true });
   }
-});
+  return snapshotsDir;
+};
 
-// Test endpoint to check if the router is correctly mounted
-router.get('/test', (req, res) => {
-  res.json({ status: 'Snapshots API is working' });
-});
+// Add this helper function
+const migrateSnapshot = (snapshot) => {
+  if (!snapshot.iraStats && snapshot.iraPercentage) {
+    // Convert old format to new format
+    snapshot.iraStats = {
+      counted: 0, // We don't have this data in old format
+      notCounted: 0,
+      percentage: snapshot.iraPercentage,
+      branchPercentages: [] // Start with empty array
+    };
+    delete snapshot.iraPercentage;
+  }
 
-// Update the GET route to handle no data case
-router.get('/', (req, res) => {
+  if (!snapshot.ccStats && snapshot.ccPercentage) {
+    snapshot.ccStats = {
+      counted: 0,
+      notCounted: 0,
+      percentage: snapshot.ccPercentage,
+      branchPercentages: []
+    };
+    delete snapshot.ccPercentage;
+  }
+
+  return snapshot;
+};
+
+// GET all snapshots
+router.get('/', async (req, res) => {
   try {
-    const indexPath = req.indexPath;
-    console.log('Reading snapshots from:', indexPath);
-    
-    if (!fs.existsSync(indexPath)) {
-      console.log('Index file not found, creating new one');
-      fs.writeFileSync(indexPath, JSON.stringify([]));
-      return res.json([]);
-    }
-    
-    const content = fs.readFileSync(indexPath, 'utf8');
-    if (!content.trim()) {
-      console.log('Empty index file, returning empty array');
-      return res.json([]);
-    }
-    
-    const snapshots = JSON.parse(content);
-    console.log(`Found ${snapshots.length} snapshots`);
+    const snapshots = await Snapshot.find().sort({ date: -1 });
     res.json(snapshots);
   } catch (error) {
-    console.error('Error retrieving snapshots:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve snapshots', 
-      details: error.message 
-    });
-  }
-});
-
-// Get a specific snapshot by ID
-router.get('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    const snapshotPath = path.join(req.snapshotsDir, `${id}.json`);
-    
-    console.log(`Fetching snapshot with ID: ${id}`);
-    console.log(`Looking for file at: ${snapshotPath}`);
-    
-    if (!fs.existsSync(snapshotPath)) {
-      console.log(`Snapshot file not found: ${snapshotPath}`);
-      return res.status(404).json({ error: 'Snapshot not found' });
-    }
-    
-    const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
-    res.json(snapshot);
-  } catch (error) {
-    console.error('Error retrieving snapshot:', error);
-    res.status(500).json({ error: 'Failed to retrieve snapshot', details: error.message });
+    console.error('Error loading snapshots:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Save new snapshot
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    console.log('Received POST request to save snapshot');
-    
-    // Validate request body
-    if (!req.body) {
-      console.error('Empty request body received');
-      return res.status(400).json({ error: 'Request body is empty' });
-    }
-
-    const snapshot = req.body;
-    console.log('Processing snapshot:', {
-      name: snapshot.name,
-      date: snapshot.date,
-      hasIraStats: !!snapshot.iraStats,
-      hasCcStats: !!snapshot.ccStats
+    const snapshot = new Snapshot({
+      id: Date.now().toString(),
+      ...req.body,
+      createdAt: new Date()
     });
 
-    // Generate ID if not provided
-    const snapshotId = snapshot.id || Date.now().toString();
-    
-    // Ensure we have the snapshots directory path
-    if (!req.snapshotsDir) {
-      console.error('Snapshots directory not set in middleware');
-      throw new Error('Server configuration error: snapshots directory not set');
-    }
-
-    // Log the full path we're trying to save to
-    const snapshotPath = path.join(req.snapshotsDir, `${snapshotId}.json`);
-    console.log('Attempting to save snapshot to:', snapshotPath);
-
-    // Ensure directory exists
-    if (!fs.existsSync(req.snapshotsDir)) {
-      console.log('Creating snapshots directory:', req.snapshotsDir);
-      fs.mkdirSync(req.snapshotsDir, { recursive: true });
-    }
-
-    // Save the full snapshot with formatting for readability
-    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2));
-    console.log('Successfully wrote snapshot file');
-
-    // Update the index
-    const indexPath = path.join(req.snapshotsDir, 'index.json');
-    console.log('Reading index from:', indexPath);
-    
-    let index = [];
-    if (fs.existsSync(indexPath)) {
-      index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
-    }
-
-    const indexEntry = {
-      id: snapshotId,
-      name: snapshot.name,
-      date: snapshot.date,
-      iraPercentage: snapshot.iraStats?.percentage || 0,
-      ccPercentage: snapshot.ccStats?.percentage || 0
-    };
-
-    // Update or add to index
-    const existingIndex = index.findIndex(s => s.id === snapshotId);
-    if (existingIndex >= 0) {
-      index[existingIndex] = indexEntry;
-    } else {
-      index.push(indexEntry);
-    }
-
-    // Save updated index
-    fs.writeFileSync(indexPath, JSON.stringify(index, null, 2));
-    console.log('Successfully updated index file');
-
-    // Send success response
-    res.status(201).json({
-      message: 'Snapshot saved successfully',
-      id: snapshotId,
-      savedTo: snapshotPath
-    });
+    await snapshot.save();
+    res.json(snapshot);
   } catch (error) {
     console.error('Error saving snapshot:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get snapshot by ID 
+router.get('/:id', async (req, res) => {
+  try {
+    const snapshot = await Snapshot.findOne({ id: req.params.id });
+    if (!snapshot) {
+      throw new Error('Snapshot not found');
+    }
+    res.json(snapshot);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+// Delete snapshot
+router.delete('/:id', async (req, res) => {
+  try {
+    await Snapshot.deleteOne({ id: req.params.id });
+    res.json({ message: 'Snapshot deleted' });
+  } catch (error) {
+    res.status(404).json({ error: 'Snapshot not found' });
+  }
+});
+
+// Create email draft from snapshot
+router.post('/email-draft', async (req, res) => {
+  try {
+    const { snapshotId } = req.body;
+    const response = await axios.get(`${MONGODB_URL}/snapshots/${snapshotId}`);
+    const snapshot = response.data;
+
+    if (!snapshot) {
+      return res.status(404).json({ error: 'Snapshot not found' });
+    }
+
+    // Generate email draft URL
+    const subject = encodeURIComponent(`IRA CC Report - ${new Date().toLocaleDateString()}`);
+    const body = encodeURIComponent(`IRA CC Snapshot Report\n\nDate: ${snapshot.date}\nName: ${snapshot.name}`);
+    const emailUrl = `mailto:?subject=${subject}&body=${body}`;
+
+    res.json({ emailUrl });
+  } catch (error) {
+    res.status(404).json({ error: 'Snapshot not found' });
+  }
+});
+
+// Check MongoDB status
+router.get('/db-status', async (req, res) => {
+  try {
+    // Check MongoDB connection
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({
+        connected: false,
+        status: 'Database disconnected',
+        readyState: mongoose.connection.readyState
+      });
+    }
+
+    // Count documents in snapshots collection
+    const count = await mongoose.connection.db.collection('snapshots').countDocuments();
+    
+    res.json({
+      connected: true,
+      status: 'Database connected',
+      host: mongoose.connection.host,
+      name: mongoose.connection.name,
+      count: count
+    });
+  } catch (error) {
+    console.error('Database status check failed:', error);
     res.status(500).json({
-      error: 'Failed to save snapshot',
-      details: error.message,
-      stack: error.stack
+      connected: false,
+      error: error.message,
+      details: 'Failed to check database status'
     });
   }
 });
 
-// Delete a snapshot
-router.delete('/:id', (req, res) => {
+// Trigger migration
+router.post('/migrate', async (req, res) => {
   try {
-    const { id } = req.params;
-    const snapshotPath = path.join(req.snapshotsDir, `${id}.json`);
-    
-    // Check if snapshot exists
-    if (!fs.existsSync(snapshotPath)) {
-      return res.status(404).json({ error: 'Snapshot not found' });
-    }
-    
-    // Delete the snapshot file
-    fs.unlinkSync(snapshotPath);
-    
-    // Update the snapshots index
-    if (fs.existsSync(req.indexPath)) {
-      let snapshots = JSON.parse(fs.readFileSync(req.indexPath, 'utf8'));
-      snapshots = snapshots.filter(snapshot => snapshot.id !== id);
-      fs.writeFileSync(req.indexPath, JSON.stringify(snapshots, null, 2), 'utf8');
-    }
-    
-    res.json({ message: 'Snapshot deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting snapshot:', error);
-    res.status(500).json({ error: 'Failed to delete snapshot', details: error.message });
-  }
-});
-
-// Add route to export all snapshots as JSON
-router.get('/export', (req, res) => {
-  try {
-    const indexPath = req.indexPath;
-    const snapshots = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
-    
-    // Get all snapshot details
-    const allSnapshotDetails = [];
-    
-    for (const snapshot of snapshots) {
-      const snapshotPath = path.join(req.snapshotsDir, `${snapshot.id}.json`);
-      if (fs.existsSync(snapshotPath)) {
-        const snapshotData = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
-        allSnapshotDetails.push(snapshotData);
-      }
-    }
-    
-    res.setHeader('Content-Disposition', 'attachment; filename="snapshots-backup.json"');
-    res.setHeader('Content-Type', 'application/json');
-    res.json(allSnapshotDetails);
-  } catch (error) {
-    console.error('Error exporting snapshots:', error);
-    res.status(500).json({ error: 'Failed to export snapshots', details: error.message });
-  }
-});
-
-// Helper function to get snapshot by ID
-const getSnapshot = (id, snapshotsDir) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const snapshotPath = path.join(snapshotsDir, `${id}.json`);
-      
-      if (!fs.existsSync(snapshotPath)) {
-        throw new Error('Snapshot not found');
-      }
-      
-      const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
-      resolve(snapshot);
-    } catch (error) {
-      reject(error);
-    }
-  });
-};
-
-// Export snapshot to styled Excel
-router.get('/export/:id', async (req, res) => {
-  try {
-    const snapshot = await getSnapshot(req.params.id, req.snapshotsDir);
-    const workbook = await exportToExcel(snapshot);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="snapshot-${req.params.id}.xlsx"`);
-    await workbook.xlsx.write(res);
-    res.end();
+    const result = await migrateToMongoDB();
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Create Outlook email draft with custom template
-router.post('/email-draft', async (req, res) => {
+// Add to snapshots.js routes
+router.post('/migrate', async (req, res) => {
   try {
-    const { snapshotId } = req.body;
-    const snapshot = await getSnapshot(snapshotId, req.snapshotsDir);
-    const templatePath = path.join(__dirname, '../../email-template.json');
-    
-    if (!fs.existsSync(templatePath)) {
-      throw new Error('Email template not found');
-    }
-    
-    const template = JSON.parse(fs.readFileSync(templatePath, 'utf8'));
-    const emailContent = generateEmailContent(snapshot, template);
-    const emailUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(template.subject)}&body=${encodeURIComponent(emailContent)}`;
-    
-    res.json({ 
-      message: 'Email draft created successfully', 
-      emailUrl,
-      preview: emailContent 
-    });
+    const result = await migrateSnapshots();
+    res.json(result);
   } catch (error) {
-    console.error('Error creating email draft:', error);
     res.status(500).json({ 
-      error: 'Failed to create email draft', 
-      details: error.message 
+      success: false, 
+      error: error.message 
     });
   }
 });
 
-// Upload file and process data
-router.post('/upload', async (req, res) => {
+// Add status endpoint
+router.get('/status', async (req, res) => {
   try {
-    const { fileData, fileName, fileType, category } = req.body;
-    const processedData = processFileData(fileData, fileName, fileType, category);
-    res.json(processedData);
+    const count = await Snapshot.countDocuments();
+    res.json({
+      total: count,
+      databaseConnected: mongoose.connection.readyState === 1
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

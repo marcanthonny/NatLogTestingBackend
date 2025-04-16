@@ -1,0 +1,439 @@
+[
+  {
+    "id": "1742780494176",
+    "name": "W3 Mar 25 (19 March 2025)",
+    "date": "2025-03-19T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.47963442337155,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 77.76362981826908,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1742780600900",
+    "name": "W3 Mar 25 (20 March 2025)",
+    "date": "2025-03-20T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.4823818105134,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 81.01225316995773,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1742780967489",
+    "name": "W3 Mar 25 (21 March 2025)",
+    "date": "2025-03-21T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.46514313499057,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 83.57688564152478,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1742782364515",
+    "name": "W3 Mar 25 (22 March 2025)",
+    "date": "2025-03-22T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.47722358196897,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 85.87818829082279,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1742785870709",
+    "name": "W2 Mar 25 (18 March 2025)",
+    "date": "2025-03-18T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.47666750848838,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 73.92501433314223,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1742879105307",
+    "name": "W3 Mar 25 (25 March 2025)",
+    "date": "2025-03-25T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48473994056431,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 87.92323800467369,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1742891908324",
+    "name": "W3 Mar 25 (23 March 2025)",
+    "date": "2025-03-23T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.47722358196897,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 87.35616858441887,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1742892011600",
+    "name": "W3 Mar 25 (24 March 2025)",
+    "date": "2025-03-24T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48473994056431,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 89.31480913587819,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1743039181825",
+    "name": "W2 Mar 2025 (17 March 2025)",
+    "date": "2025-03-17T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48361581920904,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 73.92452150956981,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1743039239008",
+    "name": "W2 Mar 25 (16 March 2025)",
+    "date": "2025-03-16T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48361581920904,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 73.92452150956981,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1743039273353",
+    "name": "W2 Mar 25 (15 March 2025)",
+    "date": "2025-03-15T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48361581920904,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 73.92452150956981,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1743039922732",
+    "name": "W2 Mar 25 (13 March 2025)",
+    "date": "2025-03-13T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48361581920904,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 73.92452150956981,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1743039970371",
+    "name": "W2 March 2025 (12 March 2025)",
+    "date": "2025-03-12T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48361581920904,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 73.92452150956981,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1743040068373",
+    "name": "W1 Mar 25 (11 March 2025)",
+    "date": "2025-03-11T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.48361581920904,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 38.830300139056654,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1743065023430",
+    "name": "W4 Mar 25 (27 March 2025)",
+    "date": "2025-03-27T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.49582345275482,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 91.94482777011126,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1744359074046",
+    "name": "W4 Mar 25 (01 April 2025)",
+    "date": "2025-04-01T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.55787828237462,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 98.83142340168878,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1744360079967",
+    "name": "W1 Apr 25 (11 April 2025)",
+    "date": "2025-04-11T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.71084917973535,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 49.79125910090152,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1744361394435",
+    "name": "W1 Apr 25 (10 April 2025)",
+    "date": "2025-04-10T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.71084917973535,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 49.79125910090152,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  },
+  {
+    "id": "1744600012796",
+    "name": "W1 Apr 25 (14 April 2025)",
+    "date": "2025-04-14T12:00:00.000Z",
+    "iraStats": {
+      "counted": 8476,
+      "notCounted": 43,
+      "percentage": 99.72973921589275,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 99.2, "counted": 372, "notCounted": 3 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 99.5, "counted": 398, "notCounted": 2 }
+      ]
+    },
+    "ccStats": {
+      "counted": 6589,
+      "notCounted": 1887,
+      "percentage": 59.932687075515425,
+      "branchPercentages": [
+        { "branch": "1982 - PT. APL JAYAPURA", "percentage": 78.5, "counted": 314, "notCounted": 86 },
+        { "branch": "1981 - PT. APL KUPANG", "percentage": 77.2, "counted": 309, "notCounted": 91 }
+      ]
+    }
+  }
+]
