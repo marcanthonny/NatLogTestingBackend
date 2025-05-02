@@ -5,7 +5,9 @@ const connectDB = require('./config/database');
 const mongoose = require('mongoose');
 const path = require('path');
 const authRoutes = require('./routes/auth');
+const snapshotsRouter = require('./routes/snapshots');
 const authMiddleware = require('./middleware/auth');
+const dataHandler = require('./utils/dataHandler');
 
 // Log startup info
 console.log('\n🚀 Starting APL Natlog Backend...');
@@ -119,7 +121,11 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
 // Configure CORS properly
 app.use(cors({
-  origin: ['https://aplnatlog-backend.vercel.app', 'https://natlogportal.vercel.app'],
+  origin: [
+    'https://aplnatlog-backend.vercel.app',
+    'https://natlogportal.vercel.app',
+    'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -141,9 +147,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', authMiddleware);
 
 // Protected routes
-app.use('/api', snapshotsRouter);
-app.use('/api', excelEditorRouter);
-app.use('/api', weekConfigRouter);
+app.use('/api/snapshots', authMiddleware, snapshotsRouter);
 
 // Add connection status middleware before routes
 app.use((req, res, next) => {
@@ -190,29 +194,11 @@ app.get('/', (req, res) => {
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   try {
-    const snapshots = await dataHandler.getSnapshots();
-    const mongoState = mongoose.connection.readyState;
-    res.json({
-      status: 'ok',
-      time: new Date().toISOString(),
-      env: process.env.NODE_ENV || 'development',
-      snapshotsLoaded: snapshots.length,
-      database: {
-        connected: mongoState === 1,
-        state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState],
-        name: mongoose.connection.name,
-        host: mongoose.connection.host
-      }
-    });
+    const status = await dataHandler.getHealthStatus();
+    res.json(status);
   } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      error: error.message,
-      database: {
-        connected: false,
-        state: 'error'
-      }
-    });
+    console.error('[Health] Check failed:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
