@@ -2,14 +2,12 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Update public paths to include all auth-related endpoints
 const publicPaths = [
   '/api/auth/login',
   '/api/auth/register',
-  '/api/auth/admin/login',
   '/admin',
   '/',
-  '/api/health'  // Allow health checks without auth
+  '/api/health'
 ];
 
 const authMiddleware = (req, res, next) => {
@@ -23,15 +21,15 @@ const authMiddleware = (req, res, next) => {
     return res.status(200).end();
   }
 
-  // Skip auth for public paths or if path starts with /api/auth/
+  // Skip auth for public paths and auth endpoints
   if (publicPaths.includes(req.path) || req.path.startsWith('/api/auth/')) {
     return next();
   }
 
+  // Only check auth for protected routes
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ 
+    return res.status(401).json({
       error: 'Authentication required',
       debug: { hasHeader: !!authHeader }
     });
@@ -40,12 +38,6 @@ const authMiddleware = (req, res, next) => {
   try {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // For admin routes, require admin role
-    if (req.path.startsWith('/admin') && decoded.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
     req.user = decoded;
     next();
   } catch (err) {

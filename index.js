@@ -110,54 +110,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Update CORS configuration - MOVE THIS BEFORE ROUTES
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'], // Add Authorization
-  credentials: false
-}));
-
-// Add CORS pre-flight handling
-app.options('*', cors());
-
-// Configure body parsers
+// Configure middleware FIRST - before any routes
+app.use(express.json());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// Debug middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
+// Configure CORS properly
+app.use(cors({
+  origin: ['https://aplnatlog-backend.vercel.app', 'https://natlogportal.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
-// Remove file system operations, use environment variables for configuration
-app.use((req, res, next) => {
-  // Add configuration to request object
-  req.config = {
-    env: process.env.NODE_ENV || 'development',
-    isServerless: process.env.VERCEL === '1'
-  };
-  next();
-});
-
-// Import data handler
-const dataHandler = require('./utils/dataHandler');
-
-// Initialize data before starting server
-app.use(async (req, res, next) => {
-  if (!dataHandler.initialized) {
-    await dataHandler.init();
-  }
-  next();
-});
-
-// Import and register routes
-const snapshotsRouter = require('./routes/snapshots');
-const excelEditorRouter = require('./routes/excelEditor');
-const weekConfigRouter = require('./routes/weekConfig');
-const authMiddleware = require('./middleware/auth');
-const authRoutes = require('./routes/auth');
+// Handle preflight requests
+app.options('*', cors());
 
 // Serve static files BEFORE auth middleware
 app.use(express.static('public'));
