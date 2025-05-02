@@ -134,20 +134,20 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// Serve static files BEFORE auth middleware
+// Serve static files
 app.use(express.static('public'));
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Auth routes must come before auth middleware
+// Auth routes must come BEFORE protecting /api routes
 app.use('/api/auth', authRoutes);
 
-// Protect all other API routes
+// AFTER auth routes, then protect other API routes
 app.use('/api', authMiddleware);
 
-// Protected routes
-app.use('/api/snapshots', authMiddleware, snapshotsRouter);
+// Protected routes come last
+app.use('/api/snapshots', snapshotsRouter);
 
 // Add connection status middleware before routes
 app.use((req, res, next) => {

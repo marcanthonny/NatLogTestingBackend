@@ -4,6 +4,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const publicPaths = [
   '/api/auth/login',
+  '/api/auth/admin/login',  // Add this line
   '/api/auth/register',
   '/admin',
   '/',
