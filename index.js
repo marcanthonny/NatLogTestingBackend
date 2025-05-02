@@ -4,6 +4,8 @@ const cors = require('cors');
 const connectDB = require('./config/database');
 const mongoose = require('mongoose');
 const path = require('path');
+const authRoutes = require('./routes/auth');
+const authMiddleware = require('./middleware/auth');
 
 // Log startup info
 console.log('\n🚀 Starting APL Natlog Backend...');
@@ -261,3 +263,7 @@ app.use((err, req, res, next) => {
 
 // Export the Express app for serverless deployment
 module.exports = app;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

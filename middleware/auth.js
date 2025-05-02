@@ -41,7 +41,7 @@ const authMiddleware = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    console.error('Token verification failed:', err.message);
+    console.error('Auth error:', err.message);
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 };

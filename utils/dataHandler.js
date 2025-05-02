@@ -11,7 +11,7 @@ class DataHandler {
     
     try {
       if (!mongoose.connection.readyState) {
-        console.log('Connecting to MongoDB:', process.env.MONGODB_URL);
+        console.log('[MongoDB] Connecting to database...');
         await mongoose.connect(process.env.MONGODB_URL, {
           useNewUrlParser: true,
           useUnifiedTopology: true,
@@ -37,9 +37,9 @@ class DataHandler {
         }, 10000);
       }
     } catch (error) {
-      console.error('MongoDB connection error:', error);
+      console.error('[MongoDB] Connection error:', error);
       this.initialized = false;
-      throw error;
+      throw new Error('Database connection failed: ' + error.message);
     }
 
     this.initialized = true;
