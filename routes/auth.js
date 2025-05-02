@@ -15,7 +15,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Find user and check role
+    // Find user and verify credentials
     const user = await User.findOne({ 
       username: username.toLowerCase(),
     }).select('+password +role +active');
@@ -26,14 +26,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // For admin panel, require admin role
-    if (req.get('referer')?.includes('/admin') && user.role !== 'admin') {
-      return res.status(403).json({ 
-        error: 'Admin privileges required' 
-      });
-    }
-
-    // Generate token with role
+    // Generate token
     const token = jwt.sign(
       { 
         userId: user._id,
@@ -44,7 +37,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Update last login
+    // Update last login and send response
     await User.findByIdAndUpdate(user._id, {
       lastLogin: new Date(),
       active: true
