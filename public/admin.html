@@ -208,20 +208,20 @@
             const password = document.getElementById('password').value;
             
             try {
-                // Fix API endpoint URL
                 const response = await fetch(`${API_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ 
+                        username: username.toLowerCase(),
+                        password 
+                    })
                 });
 
-                console.log('Login response status:', response.status);
                 const data = await response.json();
                 
                 if (response.ok && data.token) {
-                    // Check if user is admin
                     if (data.role !== 'admin') {
                         showLoginError('Access denied: Admin privileges required');
                         return;
@@ -231,11 +231,11 @@
                     localStorage.setItem('adminToken', authToken);
                     showDashboard();
                 } else {
-                    showLoginError(data.error || 'Invalid credentials');
+                    showLoginError(data.error || 'Login failed');
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                showLoginError('Network or server error. Please try again.');
+                showLoginError('Network or server error');
             }
         });
 
