@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>APL Natlog Backend Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        .dashboard-container {
+            display: none;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-connected { background-color: #28a745; }
+        .status-disconnected { background-color: #dc3545; }
+        .status-locked { background-color: #ffc107; }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Login Form -->
+    <div id="loginForm" class="login-container">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="text-center mb-4">Admin Login</h3>
+                <form id="adminLoginForm">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <div id="loginError" class="alert alert-danger d-none"></div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard-container container py-5">
+        <div class="row mb-4">
+            <div class="col d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>APL Natlog Backend Admin</h2>
+                    <div id="lastUpdate" class="text-muted small"></div>
+                </div>
+                <button id="logoutBtn" class="btn btn-outline-danger">Logout</button>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Database Status</h5>
+                        <div id="dbStatus">
+                            <div class="status-indicator status-disconnected"></div>
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">API Status</h5>
+                        <div id="apiStatus">
+                            <div class="status-indicator status-disconnected"></div>
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Auth Status</h5>
+                        <div id="authStatus">
+                            <div class="status-indicator status-disconnected"></div>
+                            Checking...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Testing Console -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">API Test Console</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <select id="endpoint" class="form-select" onchange="handleEndpointChange()">
+                            <option value="/api/health">Health Check</option>
+                            <option value="/api/test">Test Endpoint</option>
+                            <option value="/api/snapshots">List Snapshots</option>
+                            <option value="snapshot">Get a Snapshot</option>
+                        </select>
+                        <div id="snapshotIdInput" class="mt-2 d-none">
+                            <label class="form-label">Snapshot ID</label>
+                            <input type="text" class="form-control" id="snapshotId" placeholder="Enter snapshot ID">
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <select id="method" class="form-select">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button id="testBtn" class="btn btn-primary w-100">Send Request</button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Request Body (JSON)</label>
+                    <textarea id="requestBody" class="form-control" rows="3"></textarea>
+                </div>
+                <div id="response" class="mt-3">
+                    <pre class="bg-dark text-light p-3 rounded"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">User Management</h5>
+                <div class="row mb-3">
+                    <div class="col">
+                        <button class="btn btn-primary" onclick="showAddUserModal()">Add New User</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Modal -->
+        <div class="modal fade" id="userModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="userModalTitle">Add User</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="userForm">
+                            <input type="hidden" id="userId">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" id="userUsername" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" id="userPassword">
+                                <small class="text-muted">Leave empty to keep existing password</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" id="userRole" required>
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="saveUser()">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://aplnatlog-backend.vercel.app';
+        let authToken = localStorage.getItem('adminToken');
+
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Fix API endpoint URL
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                console.log('Login response status:', response.status);
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    // Check if user is admin
+                    if (data.role !== 'admin') {
+                        showLoginError('Access denied: Admin privileges required');
+                        return;
+                    }
+                    
+                    authToken = data.token;
+                    localStorage.setItem('adminToken', authToken);
+                    showDashboard();
+                } else {
+                    showLoginError(data.error || 'Invalid credentials');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Network or server error. Please try again.');
+            }
+        });
+
+        // Call checkAuth on page load
+        checkAuth();
+
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('adminToken');
+            authToken = null;
+            showLoginForm();
+        });
+
+        function showDashboard() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            checkStatus();
+            loadUsers();
+        }
+
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+        }
+
+        async function checkStatus() {
+            try {
+                const headers = { Authorization: `Bearer ${authToken}` };
+                const healthRes = await fetch(`${API_URL}/api/health`, { headers });
+                const healthData = await healthRes.json();
+                
+                // Update API status
+                updateStatusIndicator('apiStatus', true, `Connected (${healthData.snapshotsLoaded} snapshots)`);
+
+                // Update DB status with more details
+                const dbStatus = healthData.database;
+                const isConnected = dbStatus && dbStatus.connected;
+                const dbMessage = isConnected 
+                    ? `Connected to ${dbStatus.name || 'MongoDB'} (${dbStatus.state})`
+                    : `Disconnected (${dbStatus?.state || 'unknown'})`;
+                updateStatusIndicator('dbStatus', isConnected, dbMessage);
+                
+                updateStatusIndicator('authStatus', true, 'Authenticated');
+                
+                document.getElementById('lastUpdate').textContent = 
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error('Status check failed:', error);
+                updateStatusIndicator('dbStatus', false, 'Connection failed');
+                updateStatusIndicator('apiStatus', false, 'API check failed');
+                if (error.status === 401) {
+                    showLoginForm();
+                }
+            }
+        }
+
+        function updateStatusIndicator(elementId, isConnected, message) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="status-indicator status-${isConnected ? 'connected' : 'disconnected'}"></div>
+                ${message}
+            `;
+        }
+
+        function handleEndpointChange() {
+            const endpoint = document.getElementById('endpoint').value;
+            const snapshotIdInput = document.getElementById('snapshotIdInput');
+            
+            if (endpoint === 'snapshot') {
+                snapshotIdInput.classList.remove('d-none');
+            } else {
+                snapshotIdInput.classList.add('d-none');
+            }
+        }
+
+        // Update API Test Console click handler
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const endpointSelect = document.getElementById('endpoint');
+            const method = document.getElementById('method').value;
+            const body = document.getElementById('requestBody').value;
+            const responseDiv = document.querySelector('#response pre');
+            
+            // Generate endpoint URL
+            let endpoint = endpointSelect.value;
+            if (endpoint === 'snapshot') {
+                const snapshotId = document.getElementById('snapshotId').value;
+                if (!snapshotId) {
+                    responseDiv.textContent = 'Error: Please enter a snapshot ID';
+                    return;
+                }
+                endpoint = `/api/snapshots/${snapshotId}`;
+            }
+            
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                };
+
+                const options = {
+                    method,
+                    headers
+                };
+
+                if (method !== 'GET' && body) {
+                    options.body = body;
+                }
+
+                const res = await fetch(`${API_URL}${endpoint}`, options);
+                const data = await res.json();
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+                if (error.status === 401) {
+                    showLoginForm();
+                }
+            }
+        });
+
+        // User Management
+        let userModal;
+        let users = [];
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API_URL}/api/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                users = await res.json();
+                renderUsers();
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('userTable');
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.username}</td>
+                    <td>${user.role}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editUser('${user._id}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser('${user._id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showAddUserModal() {
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('userModalTitle').textContent = 'Add User';
+            userModal.show();
+        }
+
+        function editUser(id) {
+            const user = users.find(u => u._id === id);
+            if (user) {
+                document.getElementById('userId').value = user._id;
+                document.getElementById('userUsername').value = user.username;
+                document.getElementById('userRole').value = user.role;
+                document.getElementById('userModalTitle').textContent = 'Edit User';
+                userModal.show();
+            }
+        }
+
+        async function deleteUser(id) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                try {
+                    await fetch(`${API_URL}/api/users/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    loadUsers();
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                }
+            }
+        }
+
+        async function saveUser() {
+            const id = document.getElementById('userId').value;
+            const username = document.getElementById('userUsername').value;
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/users${id ? `/${id}` : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ username, password, role })
+                });
+                if (response.ok) {
+                    userModal.hide();
+                    loadUsers();
+                } else {
+                    const errorData = await response.json();
+                    console.error('Error saving user:', errorData);
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

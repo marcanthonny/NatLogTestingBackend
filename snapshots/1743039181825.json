@@ -1,0 +1,203 @@
+{
+  "id": "1743039181825",
+  "name": "W2 Mar 2025 (17 March 2025)",
+  "date": "2025-03-17T12:00:00.000Z",
+  "iraStats": {
+    "counted": 88043,
+    "notCounted": 457,
+    "percentage": 99.48361581920904,
+    "branchPercentages": [
+      {
+        "branch": "1982 - PT. APL JAYAPURA",
+        "percentage": 99.4773519163763
+      },
+      {
+        "branch": "1981 - PT. APL KUPANG",
+        "percentage": 100
+      },
+      {
+        "branch": "1980 - PT. APL DENPASAR",
+        "percentage": 100
+      },
+      {
+        "branch": "1972 - PT. APL PONTIANAK",
+        "percentage": 98.42931937172776
+      },
+      {
+        "branch": "1971 - PT. APL SAMARINDA",
+        "percentage": 99.66698382492864
+      },
+      {
+        "branch": "1970 - PT. APL BANJARMASIN",
+        "percentage": 99.6415770609319
+      },
+      {
+        "branch": "1962 - PT. APL PALU",
+        "percentage": 99.60063897763578
+      },
+      {
+        "branch": "1961 - PT. APL MAKASSAR",
+        "percentage": 99.77280103862383
+      },
+      {
+        "branch": "1957 - PT. APL BANDAR LAMPUNG",
+        "percentage": 99.19463087248323
+      },
+      {
+        "branch": "1956 - PT. APL PALEMBANG",
+        "percentage": 99.96825396825398
+      },
+      {
+        "branch": "1955 - PT. APL JAMBI",
+        "percentage": 99.5263469508585
+      },
+      {
+        "branch": "1954 - PT. APL BATAM",
+        "percentage": 100
+      },
+      {
+        "branch": "1953 - PT. APL PEKANBARU",
+        "percentage": 100
+      },
+      {
+        "branch": "1952 - PT. APL PADANG",
+        "percentage": 99.71056439942113
+      },
+      {
+        "branch": "1951 - PT. APL MEDAN",
+        "percentage": 99.20650280627056
+      },
+      {
+        "branch": "1940 - PT. APL SURABAYA",
+        "percentage": 98.91385210534148
+      },
+      {
+        "branch": "1932 - PT. APL YOGYAKARTA",
+        "percentage": 99.94380443944928
+      },
+      {
+        "branch": "1930 - PT. APL SEMARANG",
+        "percentage": 99.90747166319686
+      },
+      {
+        "branch": "1922 - PT. APL BANDUNG",
+        "percentage": 99.38566552901024
+      },
+      {
+        "branch": "1921 - PT. APL TANGERANG",
+        "percentage": 99.72260748959778
+      },
+      {
+        "branch": "1920 - PT. APL BOGOR",
+        "percentage": 98.45474613686534
+      },
+      {
+        "branch": "1910 - PT. APL JAKARTA 1",
+        "percentage": 99.521372066742
+      },
+      {
+        "branch": "1960 - PT. APL MANADO",
+        "percentage": 99.86357435197817
+      }
+    ]
+  },
+  "ccStats": {
+    "counted": 110889,
+    "notCounted": 39114,
+    "percentage": 73.92452150956981,
+    "branchPercentages": [
+      {
+        "branch": "1982 - PT. APL JAYAPURA",
+        "percentage": 71.58852344296712
+      },
+      {
+        "branch": "1981 - PT. APL KUPANG",
+        "percentage": 60.480349344978166
+      },
+      {
+        "branch": "1980 - PT. APL DENPASAR",
+        "percentage": 28.21299135768051
+      },
+      {
+        "branch": "1972 - PT. APL PONTIANAK",
+        "percentage": 83.63920343615774
+      },
+      {
+        "branch": "1971 - PT. APL SAMARINDA",
+        "percentage": 47.32824427480916
+      },
+      {
+        "branch": "1970 - PT. APL BANJARMASIN",
+        "percentage": 73.81564450973191
+      },
+      {
+        "branch": "1962 - PT. APL PALU",
+        "percentage": 66.37309847878302
+      },
+      {
+        "branch": "1961 - PT. APL MAKASSAR",
+        "percentage": 93.30051955154498
+      },
+      {
+        "branch": "1957 - PT. APL BANDAR LAMPUNG",
+        "percentage": 87.79069767441861
+      },
+      {
+        "branch": "1956 - PT. APL PALEMBANG",
+        "percentage": 88.3629191321499
+      },
+      {
+        "branch": "1955 - PT. APL JAMBI",
+        "percentage": 70.82706766917293
+      },
+      {
+        "branch": "1954 - PT. APL BATAM",
+        "percentage": 61.564945226917054
+      },
+      {
+        "branch": "1953 - PT. APL PEKANBARU",
+        "percentage": 63.10801144492132
+      },
+      {
+        "branch": "1952 - PT. APL PADANG",
+        "percentage": 51.3099556630391
+      },
+      {
+        "branch": "1951 - PT. APL MEDAN",
+        "percentage": 100
+      },
+      {
+        "branch": "1940 - PT. APL SURABAYA",
+        "percentage": 68.07198270380262
+      },
+      {
+        "branch": "1932 - PT. APL YOGYAKARTA",
+        "percentage": 75.44931703810208
+      },
+      {
+        "branch": "1930 - PT. APL SEMARANG",
+        "percentage": 98.87667304015297
+      },
+      {
+        "branch": "1922 - PT. APL BANDUNG",
+        "percentage": 74.47985251514353
+      },
+      {
+        "branch": "1921 - PT. APL TANGERANG",
+        "percentage": 78.45417236662107
+      },
+      {
+        "branch": "1920 - PT. APL BOGOR",
+        "percentage": 58.04886211512718
+      },
+      {
+        "branch": "1910 - PT. APL JAKARTA 1",
+        "percentage": 100
+      },
+      {
+        "branch": "1960 - PT. APL MANADO",
+        "percentage": 15.218138096873925
+      }
+    ]
+  }
+}
