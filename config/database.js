@@ -109,7 +109,7 @@ const connectDB = async () => {
       const hashedPassword = await bcrypt.hash('Admin@1234', 10);
       await mongoose.connection.db.collection('users').insertOne({
         username: 'admin',
-        password: hashedPassword,
+        password: 'Admin@1234',
         role: 'admin'
       });
     }
