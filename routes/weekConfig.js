@@ -5,7 +5,8 @@ const authMiddleware = require('../middleware/auth');
 // Apply auth middleware to all routes in this router
 router.use(authMiddleware);
 
-router.get('/week-config', async (req, res) => {
+// Remove '/week-config' from the route paths since it will be added when mounting
+router.get('/', async (req, res) => {
   try {
     const WeekConfig = require('../models/WeekConfig');
     const config = await WeekConfig.findOne();
@@ -15,7 +16,7 @@ router.get('/week-config', async (req, res) => {
   }
 });
 
-router.post('/week-config', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const WeekConfig = require('../models/WeekConfig');
     const config = await WeekConfig.findOneAndUpdate(

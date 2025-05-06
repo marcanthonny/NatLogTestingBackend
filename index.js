@@ -172,6 +172,7 @@ app.use('/api', (req, res, next) => {
 // Protected routes come last
 app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/batch-correction', batchCorrectionRouter);
+app.use('/api/week-config', require('./routes/weekConfig')); // Add this line
 
 // Mount routes with proper prefixes
 app.use('/api/auth', require('./routes/auth'));
