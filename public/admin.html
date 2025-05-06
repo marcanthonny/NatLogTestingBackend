@@ -199,6 +199,11 @@
     </div>
 
     <script>
+        // Initialize Bootstrap modal when document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            userModal = new bootstrap.Modal(document.getElementById('userModal'));
+        });
+
         const API_URL = 'https://aplnatlog-backend.vercel.app';
         let authToken = localStorage.getItem('adminToken');
 
@@ -233,6 +238,25 @@
                 showLoginError('Network or server error');
             }
         });
+
+        // Add checkAuth function that was called but not defined
+        async function checkAuth() {
+            if (authToken) {
+                try {
+                    const response = await fetch(`${API_URL}/api/health`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    if (response.ok) {
+                        showDashboard();
+                    } else {
+                        showLoginForm();
+                    }
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    showLoginForm();
+                }
+            }
+        }
 
         // Call checkAuth on page load
         checkAuth();
@@ -363,13 +387,25 @@
 
         async function loadUsers() {
             try {
-                const res = await fetch(`${API_URL}/api/users`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                const response = await fetch(`${API_URL}/api/users`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
-                users = await res.json();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                users = await response.json();
+                console.log('Loaded users:', users); // Debug log
                 renderUsers();
             } catch (error) {
                 console.error('Error loading users:', error);
+                document.getElementById('userTable').innerHTML = `
+                    <tr><td colspan="3" class="text-danger">Error loading users: ${error.message}</td></tr>
+                `;
             }
         }
 
