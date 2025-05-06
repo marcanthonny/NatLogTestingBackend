@@ -45,6 +45,38 @@ class DataHandler {
     this.initialized = true;
   }
 
+  async getHealthStatus() {
+    await this.init();
+    try {
+      const mongoState = mongoose.connection.readyState;
+      const snapshots = await Snapshot.countDocuments();
+
+      return {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        snapshotsLoaded: snapshots,
+        database: {
+          connected: mongoState === 1,
+          state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState],
+          name: mongoose.connection.name,
+          host: mongoose.connection.host
+        }
+      };
+    } catch (error) {
+      console.error('[Health] Status check failed:', error);
+      return {
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        database: {
+          connected: false,
+          state: 'error',
+          lastError: error.message
+        }
+      };
+    }
+  }
+
   async getSnapshots() {
     await this.init();
     try {

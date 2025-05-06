@@ -205,10 +205,20 @@ app.get('/', (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     const status = await dataHandler.getHealthStatus();
+    res.setHeader('Content-Type', 'application/json');
     res.json(status);
   } catch (error) {
     console.error('[Health] Check failed:', error);
-    res.status(500).json({ error: error.message });
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      database: {
+        connected: false,
+        state: 'error'
+      }
+    });
   }
 });
 
