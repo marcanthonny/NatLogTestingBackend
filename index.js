@@ -115,13 +115,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Serve static files FIRST, before any other middleware
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Then configure other middleware
+// Configure middleware FIRST, before any routes
 app.use(express.json());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+
+// Serve static files with proper MIME types
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html');
+    }
+  }
+}));
 
 // Configure CORS
 app.use(cors({
@@ -141,20 +147,9 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// Add CORS headers
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+// Only set JSON content type for API routes
+app.use('/api', (req, res, next) => {
   res.setHeader('Content-Type', 'application/json');
-  next();
-});
-
-// Add content-type middleware for HTML
-app.use((req, res, next) => {
-  if (req.path.endsWith('.html')) {
-    res.setHeader('Content-Type', 'text/html');
-  }
   next();
 });
 
