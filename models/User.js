@@ -12,7 +12,8 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: true,
+    select: false // Hide password by default
   },
   role: {
     type: String,
@@ -36,8 +37,12 @@ userSchema.index({ username: 1, role: 1 });
 // Fix password comparison method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    return await bcrypt.compare(candidatePassword, this.password);
+    console.log('[Auth] Comparing passwords...');
+    const isMatch = await bcrypt.compare(candidatePassword, this.password);
+    console.log('[Auth] Password match:', isMatch);
+    return isMatch;
   } catch (error) {
+    console.error('[Auth] Password comparison error:', error);
     throw new Error('Password comparison failed');
   }
 };

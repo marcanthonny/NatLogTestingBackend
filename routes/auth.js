@@ -6,15 +6,26 @@ const User = require('../models/User');
 // Regular login endpoint for frontend users (both admin and regular)
 router.post('/login', async (req, res) => {
   try {
+    console.log('[Auth] Login attempt for user:', req.body.username);
     const { username, password } = req.body;
     
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const user = await User.findOne({ username: username.toLowerCase() }).select('+password +role');
+    // Explicitly include password in query with select('+password')
+    const user = await User.findOne({ username: username.toLowerCase() })
+      .select('+password +role')
+      .exec();
     
-    if (!user || !(await user.comparePassword(password))) {
+    if (!user) {
+      console.log('[Auth] User not found:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const isValidPassword = await user.comparePassword(password);
+    if (!isValidPassword) {
+      console.log('[Auth] Invalid password for user:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -24,6 +35,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    console.log('[Auth] Login successful for user:', username);
     res.json({ 
       success: true,
       token,
