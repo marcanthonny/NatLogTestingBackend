@@ -58,15 +58,30 @@ router.post('/login', async (req, res) => {
 // Admin-only login endpoint for backend admin panel
 router.post('/admin/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    let username, password;
+
+    // Check for Basic Auth header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Basic ')) {
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
+      [username, password] = credentials.split(':');
+    } else {
+      // Check request body
+      ({ username, password } = req.body);
+    }
+
+    console.log('[Auth] Admin login attempt:', { username, hasPassword: !!password });
 
     if (!username || !password) {
+      console.log('[Auth] Missing credentials:', { username: !!username, password: !!password });
       return res.status(400).json({ error: 'Username and password required' });
     }
 
     const user = await User.findOne({ username: username.toLowerCase() }).select('+password +role');
 
     if (!user || !(await user.comparePassword(password))) {
+      console.log('[Auth] Invalid credentials for user:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
