@@ -149,6 +149,7 @@
                         <thead>
                             <tr>
                                 <th>Username</th>
+                                <th>Email</th>
                                 <th>Role</th>
                                 <th>Actions</th>
                             </tr>
@@ -174,6 +175,11 @@
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
                                 <input type="text" class="form-control" id="userUsername" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="userEmail">
+                                <small class="text-muted">Required for non-admin users</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
@@ -439,6 +445,7 @@
             tbody.innerHTML = users.map(user => `
                 <tr>
                     <td>${user.username}</td>
+                    <td>${user.email || 'N/A'}</td>
                     <td>${user.role}</td>
                     <td>
                         <button class="btn btn-sm btn-primary" onclick="editUser('${user._id}')">Edit</button>
@@ -461,6 +468,7 @@
             if (user) {
                 document.getElementById('userId').value = user._id;
                 document.getElementById('userUsername').value = user.username;
+                document.getElementById('userEmail').value = user.email || '';
                 document.getElementById('userRole').value = user.role;
                 document.getElementById('userModalTitle').textContent = 'Edit User';
                 userModal.show();
@@ -484,6 +492,7 @@
         async function saveUser() {
             const id = document.getElementById('userId').value;
             const username = document.getElementById('userUsername').value;
+            const email = document.getElementById('userEmail').value;
             const password = document.getElementById('userPassword').value;
             const role = document.getElementById('userRole').value;
 
@@ -494,7 +503,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ username, password, role })
+                    body: JSON.stringify({ username, email, password, role })
                 });
                 if (response.ok) {
                     userModal.hide();
