@@ -1,5 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../middleware/auth');
+
+// Apply auth middleware to all routes in this router
+router.use(authMiddleware);
 
 router.get('/week-config', async (req, res) => {
   try {
