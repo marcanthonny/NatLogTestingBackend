@@ -15,6 +15,16 @@ const userSchema = new mongoose.Schema({
     required: true,
     select: false // Hide password by default
   },
+  email: {
+    type: String,
+    required: function() {
+      return this.role !== 'admin'; // Only required for non-admin users
+    },
+    unique: true,
+    sparse: true, // Allow multiple null values (for admin)
+    lowercase: true,
+    trim: true
+  },
   role: {
     type: String,
     enum: ['admin', 'user'],
