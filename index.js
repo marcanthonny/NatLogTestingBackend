@@ -138,6 +138,15 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
+// Add CORS headers
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
 // Serve static files
 app.use(express.static('public'));
 app.get('/admin', (req, res) => {
@@ -158,6 +167,9 @@ app.use('/api', (req, res, next) => {
 // Protected routes come last
 app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/batch-correction', batchCorrectionRouter);
+
+// Mount routes with proper prefixes
+app.use('/api/snapshots', require('./routes/snapshots'));
 
 // Add connection status middleware before routes
 app.use((req, res, next) => {
@@ -264,6 +276,16 @@ app.use((err, req, res, next) => {
     path: req.path,
     serverless: true,
     env: process.env.NODE_ENV
+  });
+});
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('[API Error]:', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: err.message,
+    timestamp: new Date().toISOString()
   });
 });
 
