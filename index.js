@@ -147,10 +147,25 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files
-app.use(express.static('public'));
+// Serve static files - Update these lines
+app.use('/static', express.static(path.join(__dirname, 'public')));
+
+// Add content-type middleware for HTML
+app.use((req, res, next) => {
+  if (req.path.endsWith('.html')) {
+    res.setHeader('Content-Type', 'text/html');
+  }
+  next();
+});
+
+// Update admin route
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.setHeader('Content-Type', 'text/html');
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'), {
+    headers: {
+      'Content-Type': 'text/html',
+    }
+  });
 });
 
 // Auth routes must come BEFORE protecting /api routes
