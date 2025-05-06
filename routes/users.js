@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
-// Get all users
+// Get all users - Changed from '/' to match frontend request
 router.get('/', async (req, res) => {
   try {
     console.log('[Users] Fetching all users');
@@ -16,15 +16,18 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create new user
-router.post('/users', async (req, res) => {
+// Create new user - Fixed route path
+router.post('/', async (req, res) => {
   try {
+    console.log('[Users] Creating new user:', req.body.username);
     const { username, password, role } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ username, password: hashedPassword, role });
     await user.save();
+    console.log('[Users] User created successfully');
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
+    console.error('[Users] Create user error:', error);
     res.status(400).json({ error: error.message });
   }
 });

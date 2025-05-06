@@ -169,6 +169,8 @@ app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/batch-correction', batchCorrectionRouter);
 
 // Mount routes with proper prefixes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users')); // Make sure this line exists
 app.use('/api/snapshots', require('./routes/snapshots'));
 
 // Add connection status middleware before routes
