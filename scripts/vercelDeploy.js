@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { migrateSnapshots } = require('../utils/migrateSnapshots');
 const WeekConfig = require('../models/WeekConfig');
 const { initializeUsers } = require('./initUsers');
+const { initializeBatchCorrectionCollection } = require('./initBatchCorrectionDb');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -117,6 +118,10 @@ async function deployToVercel() {
     // Initialize users
     console.log('Setting up users...');
     await initializeUsers();
+
+    // Initialize batch correction collection
+    console.log('Initializing batch correction collection...');
+    await initializeBatchCorrectionCollection();
 
     console.log('All deployment tasks completed successfully');
     await mongoose.disconnect();

@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const snapshotsRouter = require('./routes/snapshots');
 const authMiddleware = require('./middleware/auth');
 const dataHandler = require('./utils/dataHandler');
+const batchCorrectionRouter = require('./routes/batchCorrection');
 
 // Log startup info
 console.log('\n🚀 Starting APL Natlog Backend...');
@@ -122,6 +123,9 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 // Configure CORS properly
 app.use(cors({
   origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5000',
     'https://aplnatlog-backend.vercel.app',
     'https://natlogportal.vercel.app',
     'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app'
@@ -144,10 +148,16 @@ app.get('/admin', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 // AFTER auth routes, then protect other API routes
-app.use('/api', authMiddleware);
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth/')) {
+    return next();
+  }
+  authMiddleware(req, res, next);
+});
 
 // Protected routes come last
 app.use('/api/snapshots', snapshotsRouter);
+app.use('/api/batch-correction', batchCorrectionRouter);
 
 // Add connection status middleware before routes
 app.use((req, res, next) => {
