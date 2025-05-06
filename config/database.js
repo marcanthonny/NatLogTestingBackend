@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const User = require('../models/User'); // Add this line at the top
 
 let retryCount = 0;
 const MAX_RETRIES = 5;
@@ -78,40 +79,28 @@ const connectDB = async () => {
     // Create users collection if it doesn't exist
     if (!collectionNames.includes('users')) {
       console.log('[MongoDB] Creating users collection...');
-      await mongoose.connection.db.createCollection('users', {
-        validator: {
-          $jsonSchema: {
-            bsonType: "object",
-            required: ["username", "password", "role"],
-            properties: {
-              username: {
-                bsonType: "string",
-                description: "must be a string and is required"
-              },
-              password: {
-                bsonType: "string",
-                description: "must be a string and is required"
-              },
-              role: {
-                enum: ["admin", "user"],
-                description: "can only be admin or user and is required"
-              }
-            }
-          }
-        }
-      });
+      await mongoose.connection.db.createCollection('users');
 
-      // Create admin user
-      await User.collection.createIndex(
-        { username: 1 }, 
-        { unique: true }
-      );
-      const hashedPassword = await bcrypt.hash('Admin@1234', 10);
-      await mongoose.connection.db.collection('users').insertOne({
-        username: 'admin',
-        password: 'Admin@1234',
-        role: 'admin'
-      });
+      // Create admin user with better error handling
+      try {
+        const hashedPassword = await bcrypt.hash('Admin@1234', 10);
+        console.log('[MongoDB] Creating admin user...');
+        
+        await mongoose.connection.db.collection('users').insertOne({
+          username: 'admin',
+          password: hashedPassword,
+          role: 'admin',
+          active: true,
+          createdAt: new Date()
+        });
+        
+        console.log('[MongoDB] Admin user created successfully');
+      } catch (error) {
+        console.error('[MongoDB] Error creating admin user:', error);
+        if (error.code !== 11000) { // Ignore duplicate key errors
+          throw error;
+        }
+      }
     }
 
     // Create userList collection if it doesn't exist
