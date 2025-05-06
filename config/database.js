@@ -83,18 +83,19 @@ const connectDB = async () => {
 
       // Create admin user with better error handling
       try {
-        const hashedPassword = await bcrypt.hash('Admin@1234', 10);
-        console.log('[MongoDB] Creating admin user...');
+        // Temporarily store raw password for testing
+        const adminPassword = 'Admin@1234';
+        console.log('[MongoDB] Creating admin user with password:', adminPassword);
         
         await mongoose.connection.db.collection('users').insertOne({
           username: 'admin',
-          password: hashedPassword,
+          password: adminPassword, // Store raw password temporarily
           role: 'admin',
           active: true,
           createdAt: new Date()
         });
         
-        console.log('[MongoDB] Admin user created successfully');
+        console.log('[MongoDB] Admin user created successfully with raw password');
       } catch (error) {
         console.error('[MongoDB] Error creating admin user:', error);
         if (error.code !== 11000) { // Ignore duplicate key errors

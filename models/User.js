@@ -37,9 +37,21 @@ userSchema.index({ username: 1, role: 1 });
 // Fix password comparison method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    console.log('[Auth] Comparing passwords...');
+    console.log('[Auth] Password comparison debug:', {
+      candidatePassword,
+      storedPassword: this.password,
+      isHashed: this.password.startsWith('$2')
+    });
+
+    // Temporary: direct comparison if password is not hashed
+    if (!this.password.startsWith('$2')) {
+      const isMatch = candidatePassword === this.password;
+      console.log('[Auth] Using direct password comparison:', isMatch);
+      return isMatch;
+    }
+
     const isMatch = await bcrypt.compare(candidatePassword, this.password);
-    console.log('[Auth] Password match:', isMatch);
+    console.log('[Auth] Bcrypt password comparison:', isMatch);
     return isMatch;
   } catch (error) {
     console.error('[Auth] Password comparison error:', error);

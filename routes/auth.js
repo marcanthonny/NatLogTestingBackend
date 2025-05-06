@@ -66,27 +66,55 @@ router.post('/admin/login', async (req, res) => {
       const base64Credentials = authHeader.split(' ')[1];
       const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
       [username, password] = credentials.split(':');
+      console.log('[Auth] Using Basic Auth credentials, username:', username);
     } else {
       // Check request body
       ({ username, password } = req.body);
+      console.log('[Auth] Using request body credentials, username:', username);
     }
 
-    console.log('[Auth] Admin login attempt:', { username, hasPassword: !!password });
+    console.log('[Auth] Admin login attempt details:', { 
+      username,
+      hasPassword: !!password,
+      authType: authHeader ? 'Basic' : 'Body'
+    });
 
     if (!username || !password) {
       console.log('[Auth] Missing credentials:', { username: !!username, password: !!password });
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const user = await User.findOne({ username: username.toLowerCase() }).select('+password +role');
+    const user = await User.findOne({ username: username.toLowerCase() })
+      .select('+password +role')
+      .exec();
+    
+    console.log('[Auth] User lookup result:', { 
+      found: !!user, 
+      username,
+      hasPassword: !!user?.password,
+      role: user?.role
+    });
 
-    if (!user || !(await user.comparePassword(password))) {
-      console.log('[Auth] Invalid credentials for user:', username);
+    if (!user) {
+      console.log('[Auth] User not found:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const isValidPassword = await user.comparePassword(password);
+    console.log('[Auth] Password validation:', {
+      isValid: isValidPassword,
+      username: username,
+      role: user.role
+    });
+
+    if (!isValidPassword) {
+      console.log('[Auth] Invalid password for user:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check if user is admin
     if (user.role !== 'admin') {
+      console.log('[Auth] Non-admin user attempted admin login:', username);
       return res.status(403).json({ error: 'Access denied: Admin privileges required' });
     }
 
