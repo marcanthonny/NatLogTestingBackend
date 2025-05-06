@@ -115,12 +115,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Configure middleware FIRST - before any routes
+// Serve static files FIRST, before any other middleware
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Then configure other middleware
 app.use(express.json());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// Configure CORS properly
+// Configure CORS
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -147,9 +150,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files - Update these lines
-app.use('/static', express.static(path.join(__dirname, 'public')));
-
 // Add content-type middleware for HTML
 app.use((req, res, next) => {
   if (req.path.endsWith('.html')) {
@@ -158,14 +158,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Update admin route
+// Simple admin route - no content-type override needed
 app.get('/admin', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'), {
-    headers: {
-      'Content-Type': 'text/html',
-    }
-  });
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Auth routes must come BEFORE protecting /api routes
