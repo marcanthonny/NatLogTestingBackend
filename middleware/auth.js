@@ -17,6 +17,12 @@ const publicPaths = [
 
 const authMiddleware = async (req, res, next) => {
   try {
+    // Check for session first
+    if (req.session && req.session.user) {
+      req.user = req.session.user;
+      return next();
+    }
+
     // Skip auth for options and public paths
     if (req.method === 'OPTIONS' || publicPaths.some(path => req.path.startsWith(path))) {
       return next();
@@ -47,6 +53,9 @@ const authMiddleware = async (req, res, next) => {
       ...user,
       permissions: role ? role.permissions : []
     };
+
+    // Store in session for future requests
+    req.session.user = req.user;
 
     // Update session last active time
     await Session.findOneAndUpdate(
