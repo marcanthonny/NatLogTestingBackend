@@ -426,30 +426,38 @@
 
         async function checkStatus() {
             try {
-                const headers = { Authorization: `Bearer ${authToken}` };
+                const headers = { 
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                };
+                
+                // Check health endpoint first
                 const healthRes = await fetch(`${API_URL}/api/health`, { headers });
+                if (!healthRes.ok) throw new Error('Health check failed');
+                
                 const healthData = await healthRes.json();
-                
-                // Update API status
-                updateStatusIndicator('apiStatus', true, `Connected (${healthData.snapshotsLoaded} snapshots)`);
+                console.log('[Admin] Health check:', healthData);
 
-                // Update DB status with more details
+                // Update status indicators
                 const dbStatus = healthData.database;
-                const isConnected = dbStatus && dbStatus.connected;
-                const dbMessage = isConnected 
-                    ? `Connected to ${dbStatus.name || 'MongoDB'} (${dbStatus.state})`
+                const dbConnected = dbStatus && dbStatus.connected;
+                const dbMessage = dbConnected 
+                    ? `Connected to ${dbStatus.name} (${dbStatus.state})`
                     : `Disconnected (${dbStatus?.state || 'unknown'})`;
-                updateStatusIndicator('dbStatus', isConnected, dbMessage);
                 
-                updateStatusIndicator('authStatus', true, 'Authenticated');
-                
+                updateStatusIndicator('dbStatus', dbConnected, dbMessage);
+                updateStatusIndicator('apiStatus', true, 'API Connected');
+                updateStatusIndicator('authStatus', true, `Authenticated as ${healthData.user || 'admin'}`);
+
                 document.getElementById('lastUpdate').textContent = 
                     `Last updated: ${new Date().toLocaleTimeString()}`;
+
             } catch (error) {
-                console.error('Status check failed:', error);
+                console.error('[Admin] Status check failed:', error);
                 updateStatusIndicator('dbStatus', false, 'Connection failed');
                 updateStatusIndicator('apiStatus', false, 'API check failed');
-                if (error.status === 401) {
+                
+                if (error.message.includes('401')) {
                     showLoginForm();
                 }
             }

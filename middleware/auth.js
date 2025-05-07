@@ -29,15 +29,17 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Get full user object
+    // Get full user object with role
     const user = await User.findById(decoded.userId)
       .select('-password')
+      .populate('role')
       .lean();
       
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
+    // Attach full user object to request
     req.user = user;
     next();
   } catch (err) {
@@ -48,7 +50,7 @@ const authMiddleware = async (req, res, next) => {
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired' });
     }
-    res.status(500).json({ error: 'Auth error' });
+    res.status(500).json({ error: 'Auth error: ' + err.message });
   }
 };
 

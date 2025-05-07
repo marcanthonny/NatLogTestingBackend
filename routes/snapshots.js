@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { checkPermission } = require('../utils/permissionUtils');
 const { authMiddleware } = require('../middleware/auth');
+const Snapshot = require('../models/Snapshot');
+const dataHandler = require('../utils/dataHandler');
 
 // Protected routes
 router.use(authMiddleware);
