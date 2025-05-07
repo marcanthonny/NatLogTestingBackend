@@ -1,5 +1,4 @@
 const rateLimit = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis');
 const mongoose = require('mongoose');
 
 // Use MongoDB for rate limiting in production
@@ -43,12 +42,15 @@ const MongoStore = {
   }
 };
 
-// Configure rate limiter
+// Configure rate limiter with adjusted settings
 const limiter = rateLimit({
   store: MongoStore,
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute
-  message: { error: 'Too many requests, please try again later' }
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+  skip: (req) => req.path === '/api/health' // Skip health checks
 });
 
 module.exports = limiter;
