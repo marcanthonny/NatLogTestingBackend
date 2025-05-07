@@ -282,9 +282,23 @@
     </div>
 
     <script>
+        // Available permissions list - Move this to the top
+        const AVAILABLE_PERMISSIONS = [
+            'view:snapshots',
+            'create:snapshots',
+            'edit:snapshots',
+            'delete:snapshots',
+            'view:batches',
+            'create:batches',
+            'edit:batches',
+            'delete:batches'
+        ];
+
         // Initialize Bootstrap modal when document is ready
         document.addEventListener('DOMContentLoaded', function() {
             userModal = new bootstrap.Modal(document.getElementById('userModal'));
+            roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
+            loadRoles(); // Move this inside DOMContentLoaded
         });
 
         const API_URL = 'https://aplnatlog-backend.vercel.app';
@@ -615,22 +629,6 @@
 
         // Initialize role modal
         let roleModal;
-        document.addEventListener('DOMContentLoaded', function() {
-            roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
-            loadRoles();
-        });
-
-        // Available permissions list
-        const AVAILABLE_PERMISSIONS = [
-            'view:snapshots',
-            'create:snapshots',
-            'edit:snapshots',
-            'delete:snapshots',
-            'view:batches',
-            'create:batches',
-            'edit:batches',
-            'delete:batches'
-        ];
 
         async function loadRoles() {
             try {
@@ -722,7 +720,7 @@
             }
         }
 
-        // Update editRole function
+        // Update editRole function 
         async function editRole(roleName) {
             try {
                 console.log('[Admin] Editing role:', roleName);
@@ -735,7 +733,7 @@
                 document.getElementById('roleName').value = role.name;
                 document.getElementById('roleDescription').value = role.description || '';
                 
-                // Populate permissions checkboxes
+                // Populate permissions checkboxes with the now-available AVAILABLE_PERMISSIONS
                 const permissionsList = document.getElementById('permissionsList');
                 permissionsList.innerHTML = AVAILABLE_PERMISSIONS.map(permission => `
                     <div class="form-check">
@@ -748,7 +746,7 @@
                 roleModal.show();
             } catch (error) {
                 console.error('[Admin] Error editing role:', error);
-                alert('Failed to load role details');
+                alert('Failed to load role details: ' + error.message);
             }
         }
 

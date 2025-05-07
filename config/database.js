@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User'); // Add this line at the top
+const User = require('../models/User');
+const { loadEnv } = require('./envConfig');
 
 let retryCount = 0;
 const MAX_RETRIES = 5;
@@ -9,14 +10,11 @@ let isConnecting = false;
 
 const connectDB = async () => {
   try {
-    // Prevent multiple connection attempts
+    const config = loadEnv();
+    
     if (isConnecting) {
       console.log('[MongoDB] Connection already in progress...');
       return null;
-    }
-
-    if (!process.env.MONGODB_URL) {
-      throw new Error('MONGODB_URL environment variable is not set');
     }
 
     isConnecting = true;
@@ -27,13 +25,13 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000, // Further reduced for serverless
       socketTimeoutMS: 10000, // Further reduced for serverless
       keepAlive: false, // Disabled for serverless
-      dbName: 'aplnatlog-backend',
+      dbName: config.isLocal ? 'aplnatlog-local' : 'aplnatlog-backend',
       retryWrites: true,
       w: 'majority',
-      ssl: process.env.NODE_ENV === 'production',
-      autoIndex: false,
+      ssl: !config.isLocal,
+      autoIndex: config.isLocal,
       connectTimeoutMS: 5000,
-      maxPoolSize: 1, // Minimum for serverless
+      maxPoolSize: config.isLocal ? 10 : 1,
       family: 4 // Force IPv4
     };
 
