@@ -55,7 +55,22 @@ const limiter = rateLimit({
   keyGenerator: (req) => {
     // Use X-Forwarded-For header if available (from Vercel)
     return req.headers['x-forwarded-for'] || req.ip;
-  }
+  },
+  skipFailedRequests: true, // Don't count failed requests
+  skip: (req) => {
+    // Skip more paths in production
+    return req.path === '/api/health' || 
+           req.path === '/admin' ||
+           req.path === '/favicon.ico';
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many requests, please try again later',
+      retryAfter: Math.ceil(limiter.windowMs / 1000)
+    });
+  },
+  // Add timeout for store operations
+  timeout: 5000
 });
 
 module.exports = limiter;

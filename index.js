@@ -45,11 +45,26 @@ mongoose.connect(process.env.MONGODB_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
+  socketTimeoutMS: 10000,
+  keepAlive: false, // Disable for serverless
+  maxPoolSize: 1, // Limit connections for serverless
+  family: 4
 }).then(() => {
   console.log('Connected to MongoDB');
 }).catch(err => {
   console.error('MongoDB connection error:', err);
+});
+
+// Add connection error handler
+mongoose.connection.on('error', err => {
+  console.error('MongoDB connection error:', err);
+  // Close connection on error to prevent hanging
+  mongoose.connection.close();
+});
+
+// Add disconnection handler
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected - cleaning up');
 });
 
 // Public routes
@@ -72,16 +87,21 @@ app.use('/api/snapshots', authMiddleware, snapshotsRouter);
 app.use('/api/batch-correction', authMiddleware, batchCorrectionRouter);
 app.use('/api/week-config', authMiddleware, require('./routes/weekConfig'));
 
-// Error handler
+// Modify error handler to ensure response
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error'
-  });
+  // Always send a response, even for timeouts
+  if (!res.headersSent) {
+    res.status(err.status || 500).json({
+      error: err.message || 'Internal Server Error'
+    });
+  }
 });
 
-// Start session cleanup task
-startCleanupTask();
+// Don't start cleanup task in production/serverless
+if (process.env.NODE_ENV !== 'production') {
+  startCleanupTask();
+}
 
 // Start server
 app.listen(PORT, () => {
