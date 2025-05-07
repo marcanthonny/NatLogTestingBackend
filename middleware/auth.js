@@ -82,4 +82,11 @@ const checkPermission = (requiredPermission) => async (req, res, next) => {
   }
 };
 
-module.exports = { authMiddleware, checkPermission };
+// Export as an object with named exports
+module.exports = { 
+  authMiddleware,
+  checkPermission
+};
+
+// Or if you prefer default export:
+// module.exports = authMiddleware;

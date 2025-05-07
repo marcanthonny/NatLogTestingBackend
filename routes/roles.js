@@ -1,12 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const Role = require('../models/Role');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth').authMiddleware;
 const { AVAILABLE_SITES } = require('../config/roles');
 
-// Get all roles - modified to include better error handling and logging
-router.get('/', authMiddleware, async (req, res) => {
+// Get all roles
+router.get('/', async (req, res, next) => {
   try {
+    // Apply middleware manually if needed
+    if (!req.user) {
+      return authMiddleware(req, res, next);
+    }
+    
     console.log('[Roles] GET / - Fetching all roles');
     const roles = await Role.find().lean();
     console.log('[Roles] Found roles:', roles);
@@ -17,9 +22,13 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Change from :id to :name parameter
-router.get('/:name', authMiddleware, async (req, res) => {
+// Get single role by name
+router.get('/:name', async (req, res, next) => {
   try {
+    if (!req.user) {
+      return authMiddleware(req, res, next);
+    }
+
     console.log('[Roles] GET /:name - Fetching role:', req.params.name);
     const role = await Role.findOne({ name: req.params.name });
     if (!role) return res.status(404).json({ error: 'Role not found' });
