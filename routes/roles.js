@@ -16,13 +16,15 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Get role by id
-router.get('/:id', authMiddleware, async (req, res) => {
+// Change from :id to :name parameter
+router.get('/:name', authMiddleware, async (req, res) => {
   try {
-    const role = await Role.findById(req.params.id);
+    console.log('[Roles] GET /:name - Fetching role:', req.params.name);
+    const role = await Role.findOne({ name: req.params.name });
     if (!role) return res.status(404).json({ error: 'Role not found' });
     res.json(role);
   } catch (error) {
+    console.error('[Roles] Error fetching role:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -65,10 +67,10 @@ router.put('/:name', authMiddleware, async (req, res) => {
   }
 });
 
-// Delete role
-router.delete('/:id', authMiddleware, async (req, res) => {
+// Update delete route to use name instead of ID
+router.delete('/:name', authMiddleware, async (req, res) => {
   try {
-    const role = await Role.findByIdAndDelete(req.params.id);
+    const role = await Role.findOneAndDelete({ name: req.params.name });
     if (!role) return res.status(404).json({ error: 'Role not found' });
     res.json({ message: 'Role deleted successfully' });
   } catch (error) {

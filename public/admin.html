@@ -752,6 +752,27 @@
             }
         }
 
+        // Update deleteRole function to use name
+        async function deleteRole(roleName) {
+            if (confirm(`Are you sure you want to delete role "${roleName}"?`)) {
+                try {
+                    const response = await fetch(`${API_URL}/api/roles/${roleName}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to delete role');
+                    }
+                    
+                    loadRoles();
+                } catch (error) {
+                    console.error('[Admin] Error deleting role:', error);
+                    alert('Failed to delete role: ' + error.message);
+                }
+            }
+        }
+
         function hasPermission(roleName, permission) {
             // Implement permission check logic
             return false; // Default to false until we load actual permissions
