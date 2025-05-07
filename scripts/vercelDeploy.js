@@ -5,6 +5,8 @@ const { initializeUsers } = require('./initUsers');
 const { initializeBatchCorrectionCollection } = require('./initBatchCorrectionDb');
 const path = require('path');
 const fs = require('fs').promises;
+const Role = require('../models/Role');
+const { ROLES } = require('../config/roles');
 
 async function validateEnvironment() {
   const envConfig = {
@@ -123,6 +125,10 @@ async function deployToVercel() {
     console.log('Initializing batch correction collection...');
     await initializeBatchCorrectionCollection();
 
+    // Initialize roles collection
+    console.log('Initializing roles...');
+    await initializeRoles();
+
     console.log('All deployment tasks completed successfully');
     await mongoose.disconnect();
     process.exit(0);
@@ -140,6 +146,32 @@ async function deployToVercel() {
       console.error('ADMIN_PASSWORD=your_admin_password (optional)');
     }
     process.exit(1);
+  }
+}
+
+async function initializeRoles() {
+  try {
+    // Create roles collection if it doesn't exist
+    await mongoose.connection.createCollection('roles').catch(err => {
+      if (err.code !== 48) console.error('Error creating roles collection:', err);
+    });
+
+    // Initialize default roles from config
+    for (const [name, roleConfig] of Object.entries(ROLES)) {
+      await Role.findOneAndUpdate(
+        { name },
+        {
+          name,
+          description: roleConfig.description,
+          permissions: roleConfig.permissions
+        },
+        { upsert: true, new: true }
+      );
+    }
+    console.log('Roles initialized successfully');
+  } catch (error) {
+    console.error('Error initializing roles:', error);
+    throw error;
   }
 }
 

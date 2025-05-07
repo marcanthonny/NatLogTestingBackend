@@ -179,6 +179,9 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users')); // Make sure this line exists
 app.use('/api/snapshots', require('./routes/snapshots'));
 
+// Add roles route
+app.use('/api/roles', require('./routes/roles'));
+
 // Add connection status middleware before routes
 app.use((req, res, next) => {
   // Add fresh DB status check

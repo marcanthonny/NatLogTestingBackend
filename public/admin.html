@@ -630,6 +630,7 @@
                 const response = await fetch(`${API_URL}/api/roles`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
+                if (!response.ok) throw new Error('Failed to load roles');
                 const roles = await response.json();
                 renderRoles(roles);
             } catch (error) {
@@ -639,38 +640,28 @@
 
         function renderRoles(roles) {
             const tbody = document.getElementById('roleTable');
-            tbody.innerHTML = Object.entries(roles).map(([name, role]) => `
+            tbody.innerHTML = roles.map(role => `
                 <tr>
-                    <td>${name}</td>
+                    <td>${role.name}</td>
                     <td>${role.description}</td>
                     <td>${role.permissions.join(', ')}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="editRole('${name}')">
-                            Edit Permissions
+                        <button class="btn btn-sm btn-primary" onclick="editRole('${role.name}')">
+                            Edit
                         </button>
+                        ${role.name !== 'admin' ? `
+                            <button class="btn btn-sm btn-danger" onclick="deleteRole('${role.name}')">
+                                Delete
+                            </button>
+                        ` : ''}
                     </td>
                 </tr>
             `).join('');
         }
 
-        function editRole(roleName) {
-            document.getElementById('roleName').value = roleName;
-            // Populate permissions checkboxes
-            const permissionsList = document.getElementById('permissionsList');
-            permissionsList.innerHTML = AVAILABLE_PERMISSIONS.map(perm => `
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" value="${perm}" 
-                        id="perm_${perm}" ${hasPermission(roleName, perm) ? 'checked' : ''}>
-                    <label class="form-check-label" for="perm_${perm}">
-                        ${perm}
-                    </label>
-                </div>
-            `).join('');
-            roleModal.show();
-        }
-
         async function saveRolePermissions() {
             const roleName = document.getElementById('roleName').value;
+            const description = document.getElementById('roleDescription').value;
             const permissions = Array.from(document.querySelectorAll('#permissionsList input:checked'))
                 .map(input => input.value);
             
@@ -681,15 +672,13 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ permissions })
+                    body: JSON.stringify({ description, permissions })
                 });
                 
-                if (response.ok) {
-                    roleModal.hide();
-                    loadRoles();
-                } else {
-                    throw new Error('Failed to update role');
-                }
+                if (!response.ok) throw new Error('Failed to update role');
+                
+                roleModal.hide();
+                loadRoles();
             } catch (error) {
                 console.error('Error saving role:', error);
                 alert('Failed to save role permissions');
