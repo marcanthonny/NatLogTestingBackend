@@ -359,8 +359,10 @@
         function showDashboard() {
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
+            console.log('[Admin] Showing dashboard, loading data...');
             checkStatus();
             loadUsers();
+            loadRoles(); // Add this line to load roles when dashboard is shown
         }
 
         function showLoginForm() {
@@ -668,6 +670,8 @@
 
         function renderRoles(roles) {
             const tbody = document.getElementById('roleTable');
+            console.log('[Admin] Rendering roles:', roles); // Debug log
+            
             if (!Array.isArray(roles) || roles.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4">No roles found</td></tr>';
                 return;
@@ -679,11 +683,11 @@
                     <td>${role.description || 'No description'}</td>
                     <td>${Array.isArray(role.permissions) ? role.permissions.join(', ') : 'No permissions'}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="editRole('${role._id}')">
+                        <button class="btn btn-sm btn-primary" onclick="editRole('${role.name}')">
                             Edit
                         </button>
                         ${role.name !== 'admin' ? `
-                            <button class="btn btn-sm btn-danger" onclick="deleteRole('${role._id}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteRole('${role.name}')">
                                 Delete
                             </button>
                         ` : ''}
@@ -719,15 +723,16 @@
         }
 
         // Update editRole function
-        async function editRole(roleId) {
+        async function editRole(roleName) {
             try {
-                const response = await fetch(`${API_URL}/api/roles/${roleId}`, {
+                console.log('[Admin] Editing role:', roleName);
+                const response = await fetch(`${API_URL}/api/roles/${roleName}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch role');
                 const role = await response.json();
                 
-                document.getElementById('roleName').value = roleId;
+                document.getElementById('roleName').value = role.name;
                 document.getElementById('roleDescription').value = role.description || '';
                 
                 // Populate permissions checkboxes
