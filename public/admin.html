@@ -483,12 +483,23 @@
 
         // Update API Test Console click handler
         document.getElementById('testBtn').addEventListener('click', async () => {
-            const endpoint = document.getElementById('endpoint').value;
+            const endpointSelect = document.getElementById('endpoint');
             const method = document.getElementById('method').value;
             const body = document.getElementById('requestBody').value;
             const responseDiv = document.querySelector('#response pre');
             
             try {
+                // Generate endpoint URL
+                let endpoint = endpointSelect.value;
+                if (endpoint === 'snapshot') {
+                    const snapshotId = document.getElementById('snapshotId').value;
+                    if (!snapshotId) {
+                        throw new Error('Please enter a snapshot ID');
+                    }
+                    endpoint = `/api/snapshots/${snapshotId}`;
+                }
+
+                // Make request
                 const response = await fetch(`${API_URL}${endpoint}`, {
                     method,
                     headers: {
@@ -499,17 +510,20 @@
                     body: method !== 'GET' && body ? body : undefined
                 });
 
+                // Get response content type
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Response is not JSON');
+                    throw new Error(`Invalid content type: ${contentType}. Expected application/json`);
                 }
 
+                // Parse and display response
                 const data = await response.json();
                 responseDiv.textContent = JSON.stringify(data, null, 2);
+
             } catch (error) {
                 console.error('[Test] Error:', error);
                 responseDiv.textContent = `Error: ${error.message}`;
-                if (error.status === 401) {
+                if (error.response?.status === 401) {
                     showLoginForm();
                 }
             }
@@ -774,9 +788,15 @@
                     }
                 });
 
+                // Check for JSON response
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server response was not JSON');
+                }
+
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.error || 'Failed to fetch role');
+                    throw new Error(error.error || `Failed to fetch role: ${response.status}`);
                 }
 
                 const role = await response.json();

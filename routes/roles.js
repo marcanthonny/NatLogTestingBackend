@@ -8,6 +8,7 @@ const { AVAILABLE_SITES } = require('../config/roles');
 router.get('/', async (req, res) => {
   try {
     console.log('[Roles] Fetching all roles');
+    res.setHeader('Content-Type', 'application/json');
     const roles = await Role.find().lean();
     res.json(roles);
   } catch (error) {
@@ -27,6 +28,7 @@ router.get('/:name', async (req, res, next) => {
     }
 
     console.log('[Roles] GET /:name - Fetching role:', req.params.name);
+    res.setHeader('Content-Type', 'application/json');
     const role = await Role.findOne({ name: req.params.name });
     if (!role) return res.status(404).json({ error: 'Role not found' });
     res.json(role);
