@@ -1,68 +1,69 @@
 const express = require('express');
 const router = express.Router();
 const Role = require('../models/Role');
-const { isAdmin } = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth');
 
 // Get all roles
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const roles = await Role.find().sort('name');
+    const roles = await Role.find();
     res.json(roles);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get single role
-router.get('/:name', async (req, res) => {
+// Get role by id
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const role = await Role.findOne({ name: req.params.name });
-    if (!role) {
-      return res.status(404).json({ error: 'Role not found' });
-    }
+    const role = await Role.findById(req.params.id);
+    if (!role) return res.status(404).json({ error: 'Role not found' });
     res.json(role);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Create new role (admin only)
-router.post('/', isAdmin, async (req, res) => {
+// Create new role 
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { name, description, permissions } = req.body;
-    const role = new Role({ name, description, permissions });
+    if (!name) return res.status(400).json({ error: 'Role name is required' });
+
+    const role = new Role({
+      name,
+      description,
+      permissions: permissions || []
+    });
+
     await role.save();
     res.status(201).json(role);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Update role (admin only)
-router.put('/:name', isAdmin, async (req, res) => {
+// Update role
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { description, permissions } = req.body;
-    const role = await Role.findOneAndUpdate(
-      { name: req.params.name },
-      { description, permissions, updatedAt: Date.now() },
+    const { name, description, permissions } = req.body;
+    const role = await Role.findByIdAndUpdate(
+      req.params.id,
+      { name, description, permissions },
       { new: true }
     );
-    if (!role) {
-      return res.status(404).json({ error: 'Role not found' });
-    }
+    if (!role) return res.status(404).json({ error: 'Role not found' });
     res.json(role);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message }); 
   }
 });
 
-// Delete role (admin only)
-router.delete('/:name', isAdmin, async (req, res) => {
+// Delete role
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const role = await Role.findOneAndDelete({ name: req.params.name });
-    if (!role) {
-      return res.status(404).json({ error: 'Role not found' });
-    }
+    const role = await Role.findByIdAndDelete(req.params.id);
+    if (!role) return res.status(404).json({ error: 'Role not found' });
     res.json({ message: 'Role deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
