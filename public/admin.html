@@ -788,25 +788,23 @@
                     }
                 });
 
-                // Check for JSON response
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Server response was not JSON');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP Error: ${response.status}`);
                 }
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || `Failed to fetch role: ${response.status}`);
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('[Admin] Invalid content type:', contentType);
+                    throw new Error('Expected JSON response from server');
                 }
 
                 const role = await response.json();
-                
-                // Ensure roleModal is initialized
-                if (!roleModal) {
-                    roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
-                }
+                console.log('[Admin] Loaded role data:', role);
 
-                document.getElementById('roleName').value = role.name;
+                // Reset form and update fields
+                document.getElementById('roleForm').reset();
+                document.getElementById('roleName').value = role.name || '';
                 document.getElementById('roleName').readOnly = !role.isCustom;
                 document.getElementById('roleDescription').value = role.description || '';
                 
@@ -815,6 +813,7 @@
                 updateSitesList(role.allowedSites || []);
 
                 roleModal.show();
+
             } catch (error) {
                 console.error('[Admin] Error editing role:', error);
                 alert('Failed to load role details: ' + error.message);

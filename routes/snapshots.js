@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   try {
     const hasPermission = await checkPermission(req.user, 'view:snapshots');
     if (!hasPermission) {
-      return res.status(403).json({ error: 'Permission denied' });
+      return res.status(403).json({ error: 'You dont have the permission to view snapshots' });
     }
 
     const snapshots = await Snapshot.find();
@@ -28,7 +28,7 @@ router.post('/', async (req, res) => {
   try {
     const hasPermission = await checkPermission(req.user, 'create:snapshots');
     if (!hasPermission) {
-      return res.status(403).json({ error: 'Permission denied' });
+      return res.status(403).json({ error: 'You dont have the permission to create snapshots' });
     }
 
     res.setHeader('Content-Type', 'application/json');
@@ -44,7 +44,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const hasPermission = await checkPermission(req.user, 'delete:snapshots');
     if (!hasPermission) {
-      return res.status(403).json({ error: 'Permission denied' });
+      return res.status(403).json({ error: 'You dont have the permission to delete snapshots' });
     }
 
     res.setHeader('Content-Type', 'application/json');
@@ -63,7 +63,7 @@ router.get('/:id', async (req, res) => {
   try {
     const hasPermission = await checkPermission(req.user, 'view:snapshots');
     if (!hasPermission) {
-      return res.status(403).json({ error: 'Permission denied' });
+      return res.status(403).json({ error: 'You dont have the permission to view snapshot details' });
     }
 
     res.setHeader('Content-Type', 'application/json');

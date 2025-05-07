@@ -21,17 +21,19 @@ router.get('/', async (req, res) => {
 });
 
 // Get single role by name
-router.get('/:name', async (req, res, next) => {
+router.get('/:name', async (req, res) => {
   try {
-    if (!req.user) {
-      return authMiddleware(req, res, next);
-    }
-
     console.log('[Roles] GET /:name - Fetching role:', req.params.name);
     res.setHeader('Content-Type', 'application/json');
-    const role = await Role.findOne({ name: req.params.name });
-    if (!role) return res.status(404).json({ error: 'Role not found' });
+    const role = await Role.findOne({ name: req.params.name }).lean();
+    
+    if (!role) {
+      return res.status(404).json({ error: 'Role not found' });
+    }
+
+    console.log('[Roles] Found role:', role);
     res.json(role);
+
   } catch (error) {
     console.error('[Roles] Error fetching role:', error);
     res.status(500).json({ error: error.message });
