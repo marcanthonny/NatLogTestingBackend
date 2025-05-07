@@ -49,18 +49,15 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'APL Natlog Backend API' });
 });
 
+// Serve admin panel
 app.get('/admin', (req, res) => {
+  res.type('text/html');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('/api/health', async (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
-});
-
-// Auth routes (unprotected)
+// API routes
+app.use('/api/health', require('./routes/health'));
 app.use('/api/auth', authRoutes);
-
-// Protected API routes
 app.use('/api/users', authMiddleware, require('./routes/users'));
 app.use('/api/roles', authMiddleware, require('./routes/roles'));
 app.use('/api/snapshots', authMiddleware, snapshotsRouter);

@@ -483,41 +483,31 @@
 
         // Update API Test Console click handler
         document.getElementById('testBtn').addEventListener('click', async () => {
-            const endpointSelect = document.getElementById('endpoint');
+            const endpoint = document.getElementById('endpoint').value;
             const method = document.getElementById('method').value;
             const body = document.getElementById('requestBody').value;
             const responseDiv = document.querySelector('#response pre');
             
-            // Generate endpoint URL
-            let endpoint = endpointSelect.value;
-            if (endpoint === 'snapshot') {
-                const snapshotId = document.getElementById('snapshotId').value;
-                if (!snapshotId) {
-                    responseDiv.textContent = 'Error: Please enter a snapshot ID';
-                    return;
-                }
-                endpoint = `/api/snapshots/${snapshotId}`;
-            }
-            
             try {
-                const headers = {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                };
-
-                const options = {
+                const response = await fetch(`${API_URL}${endpoint}`, {
                     method,
-                    headers
-                };
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: method !== 'GET' && body ? body : undefined
+                });
 
-                if (method !== 'GET' && body) {
-                    options.body = body;
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Response is not JSON');
                 }
 
-                const res = await fetch(`${API_URL}${endpoint}`, options);
-                const data = await res.json();
+                const data = await response.json();
                 responseDiv.textContent = JSON.stringify(data, null, 2);
             } catch (error) {
+                console.error('[Test] Error:', error);
                 responseDiv.textContent = `Error: ${error.message}`;
                 if (error.status === 401) {
                     showLoginForm();
@@ -778,36 +768,54 @@
 
                 console.log('[Admin] Editing role:', roleName);
                 const response = await fetch(`${API_URL}/api/roles/${roleName}`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    }
                 });
-                if (!response.ok) throw new Error('Failed to fetch role');
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to fetch role');
+                }
+
                 const role = await response.json();
                 
+                // Ensure roleModal is initialized
+                if (!roleModal) {
+                    roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
+                }
+
                 document.getElementById('roleName').value = role.name;
                 document.getElementById('roleName').readOnly = !role.isCustom;
                 document.getElementById('roleDescription').value = role.description || '';
                 
-                // Populate permissions checkboxes with the now-available AVAILABLE_PERMISSIONS
-                const permissionsList = document.getElementById('permissionsList');
-                permissionsList.innerHTML = AVAILABLE_PERMISSIONS.map(permission => `
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" value="${permission}" 
-                            id="perm_${permission}" ${role.permissions.includes(permission) ? 'checked' : ''}>
-                        <label class="form-check-label" for="perm_${permission}">${permission}</label>
-                    </div>
-                `).join('');
-                
-                // Update site access checkboxes
-                const sites = role.allowedSites || [];
-                document.querySelectorAll('#sitesList input').forEach(input => {
-                    input.checked = sites.includes(input.value);
-                });
+                // Update permissions and sites
+                updatePermissionsList(role.permissions || []);
+                updateSitesList(role.allowedSites || []);
 
                 roleModal.show();
             } catch (error) {
                 console.error('[Admin] Error editing role:', error);
                 alert('Failed to load role details: ' + error.message);
             }
+        }
+
+        function updatePermissionsList(selectedPermissions) {
+            const permissionsList = document.getElementById('permissionsList');
+            permissionsList.innerHTML = AVAILABLE_PERMISSIONS.map(permission => `
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" value="${permission}" 
+                        id="perm_${permission}" ${selectedPermissions.includes(permission) ? 'checked' : ''}>
+                    <label class="form-check-label" for="perm_${permission}">${permission}</label>
+                </div>
+            `).join('');
+        }
+
+        function updateSitesList(selectedSites) {
+            document.querySelectorAll('#sitesList input').forEach(input => {
+                input.checked = selectedSites.includes(input.value);
+            });
         }
 
         // Update deleteRole function to use name
