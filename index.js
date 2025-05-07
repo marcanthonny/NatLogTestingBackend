@@ -40,14 +40,15 @@ app.use(cors({
 // Apply rate limiting to all routes
 app.use(limiter);
 
-// Connect to MongoDB
+// Connect to MongoDB with optimized settings for serverless
 mongoose.connect(process.env.MONGODB_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 10000,
-  keepAlive: false, // Disable for serverless
-  maxPoolSize: 1, // Limit connections for serverless
+  keepAlive: false, // Disable keepAlive
+  maxPoolSize: 1,    // Minimize connections
+  connectTimeoutMS: 5000,
   family: 4
 }).then(() => {
   console.log('Connected to MongoDB');
@@ -58,11 +59,10 @@ mongoose.connect(process.env.MONGODB_URL, {
 // Add connection error handler
 mongoose.connection.on('error', err => {
   console.error('MongoDB connection error:', err);
-  // Close connection on error to prevent hanging
   mongoose.connection.close();
 });
 
-// Add disconnection handler
+// Add cleanup on disconnect
 mongoose.connection.on('disconnected', () => {
   console.log('MongoDB disconnected - cleaning up');
 });
@@ -99,9 +99,7 @@ app.use((err, req, res, next) => {
 });
 
 // Don't start cleanup task in production/serverless
-if (process.env.NODE_ENV !== 'production') {
-  startCleanupTask();
-}
+// startCleanupTask(); // Comment out or remove this line
 
 // Start server
 app.listen(PORT, () => {

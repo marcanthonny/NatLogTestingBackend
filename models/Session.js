@@ -29,16 +29,16 @@ const sessionSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    default: () => new Date(+new Date() + 24*60*60*1000), // 24 hours from creation
-    required: true
+    default: () => new Date(Date.now() + 24*60*60*1000), // 24 hours from creation
+    required: true,
+    index: { expires: 0 } // MongoDB TTL index for automatic cleanup
   }
 });
 
-// Index for performance and TTL
+// Remove old indexes
 sessionSchema.index({ userId: 1 });
-sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Auto-delete expired sessions
 
-// Update lastActive timestamp on access
+// Simplify touch method
 sessionSchema.methods.touch = async function() {
   this.lastActive = new Date();
   return this.save();

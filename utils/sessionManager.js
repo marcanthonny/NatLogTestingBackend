@@ -1,24 +1,7 @@
 const Session = require('../models/Session');
 const mongoose = require('mongoose');
 
-// Clean up expired sessions
-const cleanupSessions = async () => {
-  try {
-    // Use more efficient bulk operations
-    await Promise.all([
-      Session.deleteMany({
-        expiresAt: { $lt: new Date() }
-      }),
-      Session.deleteMany({
-        lastActive: { $lt: new Date(Date.now() - 2 * 60 * 60 * 1000) }
-      })
-    ]);
-  } catch (error) {
-    console.error('[Session] Cleanup error:', error);
-  }
-};
-
-// Get session analytics
+// Get session analytics only - remove cleanup functions
 const getSessionAnalytics = async () => {
   try {
     const analytics = await Session.aggregate([
@@ -39,12 +22,5 @@ const getSessionAnalytics = async () => {
   }
 };
 
-// Start periodic cleanup (every 15 minutes)
-const startCleanupTask = () => {
-  if (process.env.NODE_ENV !== 'production') {
-    setInterval(cleanupSessions, 15 * 60 * 1000);
-    console.log('[Session] Scheduled cleanup task started');
-  }
-};
-
-module.exports = { cleanupSessions, getSessionAnalytics, startCleanupTask };
+// Export only what's needed
+module.exports = { getSessionAnalytics };
