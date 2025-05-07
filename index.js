@@ -8,6 +8,8 @@ const snapshotsRouter = require('./routes/snapshots');
 const { authMiddleware } = require('./middleware/auth'); // Fixed import
 const dataHandler = require('./utils/dataHandler');
 const batchCorrectionRouter = require('./routes/batchCorrection');
+const limiter = require('./middleware/rateLimit');
+const { startCleanupTask } = require('./utils/sessionManager');
 
 console.log('🚀 Starting APL Natlog Backend...');
 
@@ -31,6 +33,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Apply rate limiting to all routes
+app.use(limiter);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URL, {
@@ -71,6 +76,9 @@ app.use((err, req, res, next) => {
     error: err.message || 'Internal Server Error'
   });
 });
+
+// Start session cleanup task
+startCleanupTask();
 
 // Start server
 app.listen(PORT, () => {

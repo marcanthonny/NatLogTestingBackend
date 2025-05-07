@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const Session = require('../models/Session');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -29,18 +30,30 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Get full user object with role
+    // Get user with role and permissions
     const user = await User.findById(decoded.userId)
       .select('-password')
-      .populate('role')
       .lean();
       
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Attach full user object to request
-    req.user = user;
+    // Get role permissions
+    const role = await Role.findOne({ name: user.role });
+    
+    // Attach user and permissions to request
+    req.user = {
+      ...user,
+      permissions: role ? role.permissions : []
+    };
+
+    // Update session last active time
+    await Session.findOneAndUpdate(
+      { userId: user._id },
+      { lastActive: new Date() }
+    );
+
     next();
   } catch (err) {
     console.error('[Auth] Error:', err);

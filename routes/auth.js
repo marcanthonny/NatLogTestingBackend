@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Role = require('../models/Role'); // Add Role model
+const Session = require('../models/Session'); // Add Session model
 
 // Regular login endpoint for frontend users (both admin and regular)
 router.post('/login', async (req, res) => {
@@ -33,11 +35,32 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Fetch user's role and permissions
+    const userRole = await Role.findOne({ name: user.role });
+    const permissions = userRole ? userRole.permissions : [];
+
     const token = jwt.sign(
-      { userId: user._id, username: user.username, role: user.role },
+      { 
+        userId: user._id, 
+        username: user.username, 
+        role: user.role,
+        permissions // Add permissions to token
+      },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    // Store session in Redis or MongoDB
+    const session = {
+      userId: user._id,
+      username: user.username,
+      role: user.role,
+      permissions,
+      loginTime: new Date(),
+      lastActive: new Date()
+    };
+
+    await Session.create(session);
 
     console.log('[Auth] Login successful for user:', username);
     res.json({ 
@@ -45,7 +68,8 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         username: user.username,
-        role: user.role
+        role: user.role,
+        permissions // Send permissions to frontend
       }
     });
 
@@ -136,6 +160,27 @@ router.post('/admin/login', async (req, res) => {
   } catch (error) {
     console.error('[Auth] Admin login error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add logout endpoint
+router.post('/logout', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(400).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Delete user's session
+    await Session.deleteOne({ userId: decoded.userId });
+
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('[Auth] Logout error:', error);
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 
