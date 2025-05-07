@@ -76,8 +76,8 @@ router.post('/:id/change-password', isAdmin, async (req, res) => {
   }
 });
 
-// Update user
-router.put('/users/:id', async (req, res) => {
+// Update user - Fix path by removing /users prefix
+router.put('/:id', async (req, res) => {
   try {
     const { username, password, role } = req.body;
     const updateData = { username, role };
@@ -91,8 +91,8 @@ router.put('/users/:id', async (req, res) => {
   }
 });
 
-// Delete user
-router.delete('/users/:id', async (req, res) => {
+// Delete user - Fix path by removing /users prefix
+router.delete('/:id', async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });

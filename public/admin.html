@@ -501,19 +501,21 @@
                     method: id ? 'PUT' : 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
+                        'Authorization': `Bearer ${authToken}` // Make sure this is included
                     },
                     body: JSON.stringify({ username, email, password, role })
                 });
-                if (response.ok) {
-                    userModal.hide();
-                    loadUsers();
-                } else {
-                    const errorData = await response.json();
-                    console.error('Error saving user:', errorData);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save user');
                 }
+                
+                userModal.hide();
+                loadUsers();
             } catch (error) {
                 console.error('Error saving user:', error);
+                alert(error.message);
             }
         }
 
