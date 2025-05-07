@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const dataHandler = require('../utils/dataHandler');
+const { authMiddleware, checkPermission } = require('../middleware/auth');
 
 // Add error handler middleware
 const handleError = (res, error) => {
@@ -12,7 +13,7 @@ const handleError = (res, error) => {
 };
 
 // Fix route paths by removing /snapshots prefix (it's added in app.js)
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, checkPermission('view:snapshots'), async (req, res) => {
   try {
     res.setHeader('Content-Type', 'application/json');
     const snapshots = await dataHandler.getSnapshots();
@@ -22,7 +23,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, checkPermission('create:snapshots'), async (req, res) => {
   try {
     res.setHeader('Content-Type', 'application/json');
     const snapshot = await dataHandler.addSnapshot(req.body);
@@ -32,7 +33,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, checkPermission('delete:snapshots'), async (req, res) => {
   try {
     res.setHeader('Content-Type', 'application/json');
     const snapshot = await dataHandler.deleteSnapshot(req.params.id);
@@ -45,7 +46,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, checkPermission('view:snapshots'), async (req, res) => {
   try {
     res.setHeader('Content-Type', 'application/json');
     const snapshot = await dataHandler.getSnapshotById(req.params.id);

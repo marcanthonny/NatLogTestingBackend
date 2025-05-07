@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const Role = require('../models/Role');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -55,4 +56,30 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+// Permission middleware
+const checkPermission = (requiredPermission) => async (req, res, next) => {
+  try {
+    // Get user from previous auth middleware
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get user's role
+    const role = await Role.findOne({ name: user.role });
+    if (!role) {
+      return res.status(403).json({ error: 'Invalid role' });
+    }
+
+    // Check if role has wildcard permission or specific permission
+    if (role.permissions.includes('*') || role.permissions.includes(requiredPermission)) {
+      next();
+    } else {
+      res.status(403).json({ error: `Missing required permission: ${requiredPermission}` });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { authMiddleware, checkPermission };
