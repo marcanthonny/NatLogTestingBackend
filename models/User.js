@@ -73,6 +73,17 @@ userSchema.pre('save', async function(next) {
   }
 });
 
+// Pre-save hook for regular save operations
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  try {
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Add static method to create user with hashed password
 userSchema.statics.createUser = async function(userData) {
   try {
@@ -85,6 +96,14 @@ userSchema.statics.createUser = async function(userData) {
     }
     throw error;
   }
+};
+
+// Static method to handle hashed updates
+userSchema.statics.findByIdAndUpdateWithHash = async function(id, updateData) {
+  if (updateData.password) {
+    updateData.password = await bcrypt.hash(updateData.password, 10);
+  }
+  return this.findByIdAndUpdate(id, updateData, { new: true });
 };
 
 module.exports = mongoose.model('User', userSchema);

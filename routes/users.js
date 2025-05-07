@@ -54,7 +54,7 @@ router.post('/', isAdmin, async (req, res) => {
   }
 });
 
-// Change user password without hashing
+// Change user password with hashing
 router.post('/:id/change-password', isAdmin, async (req, res) => {
   try {
     const { newPassword } = req.body;
@@ -62,8 +62,8 @@ router.post('/:id/change-password', isAdmin, async (req, res) => {
       return res.status(400).json({ error: 'New password is required' });
     }
 
-    await User.findByIdAndUpdate(req.params.id, { 
-      password: newPassword // Save raw password
+    await User.findByIdAndUpdateWithHash(req.params.id, { 
+      password: newPassword
     });
 
     res.json({ message: 'Password changed successfully' });
@@ -73,22 +73,16 @@ router.post('/:id/change-password', isAdmin, async (req, res) => {
   }
 });
 
-// Update user with password rehashing if needed
+// Update user with proper password hashing
 router.put('/:id', async (req, res) => {
   try {
     const { username, password, role } = req.body;
     const updateData = { username, role };
-    
-    // Only update password if provided
     if (password) {
-      // Let User model handle the hashing in the pre-save hook
       updateData.password = password;
     }
     
-    await User.findByIdAndUpdate(req.params.id, 
-      updateData,
-      { new: true, runValidators: true }
-    );
+    await User.findByIdAndUpdateWithHash(req.params.id, updateData);
     res.json({ message: 'User updated successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });
