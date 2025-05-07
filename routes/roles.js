@@ -6,7 +6,7 @@ const authMiddleware = require('../middleware/auth');
 // Get all roles - modified to include better error handling and logging
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    console.log('[Roles] Fetching all roles');
+    console.log('[Roles] GET / - Fetching all roles');
     const roles = await Role.find().lean();
     console.log('[Roles] Found roles:', roles);
     res.json(roles);
@@ -46,18 +46,21 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Update role
-router.put('/:id', authMiddleware, async (req, res) => {
+// Update role - change :id to :name
+router.put('/:name', authMiddleware, async (req, res) => {
   try {
-    const { name, description, permissions } = req.body;
-    const role = await Role.findByIdAndUpdate(
-      req.params.id,
-      { name, description, permissions },
+    console.log('[Roles] PUT /:name - Updating role:', req.params.name);
+    const { description, permissions } = req.body;
+    const role = await Role.findOneAndUpdate(
+      { name: req.params.name },
+      { description, permissions },
       { new: true }
     );
     if (!role) return res.status(404).json({ error: 'Role not found' });
+    console.log('[Roles] Updated role:', role);
     res.json(role);
   } catch (error) {
+    console.error('[Roles] Error updating role:', error);
     res.status(500).json({ error: error.message }); 
   }
 });

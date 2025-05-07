@@ -324,20 +324,25 @@
 
         // Add checkAuth function that was called but not defined
         async function checkAuth() {
-            if (authToken) {
-                try {
-                    const response = await fetch(`${API_URL}/api/health`, {
-                        headers: { 'Authorization': `Bearer ${authToken}` }
-                    });
-                    if (response.ok) {
-                        showDashboard();
-                    } else {
-                        showLoginForm();
-                    }
-                } catch (error) {
-                    console.error('Auth check failed:', error);
-                    showLoginForm();
+            if (!authToken) {
+                showLoginForm();
+                return;
+            }
+            
+            try {
+                // Test the roles endpoint specifically
+                const response = await fetch(`${API_URL}/api/roles`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
+                
+                showDashboard();
+            } catch (error) {
+                console.error('[Admin] Auth check failed:', error);
+                showLoginForm();
             }
         }
 
@@ -627,21 +632,37 @@
 
         async function loadRoles() {
             try {
+                console.log('[Admin] Loading roles...');
                 const response = await fetch(`${API_URL}/api/roles`, {
                     headers: { 
                         'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     }
                 });
-                if (!response.ok) throw new Error('Failed to load roles');
+                
+                console.log('[Admin] Roles response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const roles = await response.json();
                 console.log('[Admin] Loaded roles:', roles);
+                
+                if (!Array.isArray(roles)) {
+                    throw new Error('Expected array of roles but got: ' + typeof roles);
+                }
+                
                 renderRoles(roles);
             } catch (error) {
                 console.error('[Admin] Error loading roles:', error);
                 document.getElementById('roleTable').innerHTML = `
                     <tr><td colspan="4" class="text-danger">Error loading roles: ${error.message}</td></tr>
                 `;
+                // If unauthorized, redirect to login
+                if (error.message.includes('401')) {
+                    showLoginForm();
+                }
             }
         }
 
