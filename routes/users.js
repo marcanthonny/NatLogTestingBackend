@@ -30,22 +30,21 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create new user with email requirement
+// Create new user with proper password hashing
 router.post('/', isAdmin, async (req, res) => {
   try {
     const { username, password, role, email } = req.body;
     
-    // Validate email for non-admin users
     if (role !== 'admin' && !email) {
       return res.status(400).json({ error: 'Email required for non-admin users' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Let the User model handle the hashing
     const user = new User({ 
       username, 
-      password: hashedPassword, 
+      password,
       role,
-      email: email || undefined // Use undefined for admin to avoid empty string
+      email: email || undefined
     });
     await user.save();
     res.status(201).json({ message: 'User created successfully' });
@@ -55,7 +54,7 @@ router.post('/', isAdmin, async (req, res) => {
   }
 });
 
-// Change user password (admin only)
+// Change user password without hashing
 router.post('/:id/change-password', isAdmin, async (req, res) => {
   try {
     const { newPassword } = req.body;
@@ -63,10 +62,8 @@ router.post('/:id/change-password', isAdmin, async (req, res) => {
       return res.status(400).json({ error: 'New password is required' });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
     await User.findByIdAndUpdate(req.params.id, { 
-      password: hashedPassword,
-      $set: { 'password': hashedPassword }
+      password: newPassword // Save raw password
     });
 
     res.json({ message: 'Password changed successfully' });
@@ -76,15 +73,22 @@ router.post('/:id/change-password', isAdmin, async (req, res) => {
   }
 });
 
-// Update user - Fix path by removing /users prefix
+// Update user with password rehashing if needed
 router.put('/:id', async (req, res) => {
   try {
     const { username, password, role } = req.body;
     const updateData = { username, role };
+    
+    // Only update password if provided
     if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
+      // Let User model handle the hashing in the pre-save hook
+      updateData.password = password;
     }
-    await User.findByIdAndUpdate(req.params.id, updateData);
+    
+    await User.findByIdAndUpdate(req.params.id, 
+      updateData,
+      { new: true, runValidators: true }
+    );
     res.json({ message: 'User updated successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });

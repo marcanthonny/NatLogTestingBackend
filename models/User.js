@@ -47,34 +47,26 @@ userSchema.index({ username: 1, role: 1 });
 // Fix password comparison method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
-    console.log('[Auth] Password comparison debug:', {
-      candidatePassword,
-      storedPassword: this.password,
-      isHashed: this.password.startsWith('$2')
-    });
-
-    // Temporary: direct comparison if password is not hashed
-    if (!this.password.startsWith('$2')) {
-      const isMatch = candidatePassword === this.password;
-      console.log('[Auth] Using direct password comparison:', isMatch);
-      return isMatch;
+    // First try bcrypt compare in case it's a hashed password
+    if (this.password.startsWith('$2')) {
+      return await bcrypt.compare(candidatePassword, this.password);
     }
-
-    const isMatch = await bcrypt.compare(candidatePassword, this.password);
-    console.log('[Auth] Bcrypt password comparison:', isMatch);
-    return isMatch;
+    // Fallback to direct comparison for legacy passwords
+    return candidatePassword === this.password;
   } catch (error) {
     console.error('[Auth] Password comparison error:', error);
     throw new Error('Password comparison failed');
   }
 };
 
+// Add password hashing on save or update
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    // Check if password is already hashed
+    if (!this.password.startsWith('$2')) {
+      this.password = await bcrypt.hash(this.password, 10);
+    }
     next();
   } catch (error) {
     next(error);
