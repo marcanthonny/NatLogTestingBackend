@@ -294,11 +294,20 @@
             'delete:batches'
         ];
 
+        // Move modal initialization to global scope
+        let userModal, roleModal, passwordModal;
+
         // Initialize Bootstrap modal when document is ready
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all modals at once
             userModal = new bootstrap.Modal(document.getElementById('userModal'));
             roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
-            loadRoles(); // Move this inside DOMContentLoaded
+            passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+            
+            // Only load roles if we're authenticated
+            if (authToken) {
+                loadRoles();
+            }
         });
 
         const API_URL = 'https://aplnatlog-backend.vercel.app';
@@ -486,7 +495,6 @@
         });
 
         // User Management
-        let userModal;
         let users = [];
 
         async function loadUsers() {
@@ -592,7 +600,7 @@
         }
 
         // Initialize password modal
-        let passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+        passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
 
         function showPasswordModal(userId) {
             document.getElementById('passwordUserId').value = userId;
@@ -626,9 +634,6 @@
                 alert('Failed to change password');
             }
         }
-
-        // Initialize role modal
-        let roleModal;
 
         async function loadRoles() {
             try {
@@ -720,9 +725,13 @@
             }
         }
 
-        // Update editRole function 
+        // Update editRole function to handle null roleModal
         async function editRole(roleName) {
             try {
+                if (!roleModal) {
+                    roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
+                }
+
                 console.log('[Admin] Editing role:', roleName);
                 const response = await fetch(`${API_URL}/api/roles/${roleName}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
