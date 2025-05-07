@@ -2,7 +2,8 @@ const ROLES = {
   admin: {
     name: 'admin',
     description: 'Full system access',
-    permissions: ['*']  // Wildcard for all permissions
+    permissions: ['*'],  // Wildcard for all permissions
+    allowedSites: ['admin', 'frontend', 'backend']
   },
   user: {
     name: 'user',
@@ -25,4 +26,6 @@ const ROLES = {
   }
 };
 
-module.exports = { ROLES };
+const AVAILABLE_SITES = ['admin', 'frontend', 'backend'];
+
+module.exports = { ROLES, AVAILABLE_SITES };

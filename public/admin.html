@@ -165,6 +165,9 @@
         <div class="card mt-4">
             <div class="card-body">
                 <h5 class="card-title">Role Management</h5>
+                <div class="mb-3">
+                    <button class="btn btn-primary" onclick="showAddRoleModal()">Add New Role</button>
+                </div>
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -192,10 +195,30 @@
                     </div>
                     <div class="modal-body">
                         <form id="roleForm">
-                            <input type="hidden" id="roleName">
+                            <div class="mb-3">
+                                <label class="form-label">Role Name</label>
+                                <input type="text" class="form-control" id="roleName" required>
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Role Description</label>
                                 <input type="text" class="form-control" id="roleDescription" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Site Access</label>
+                                <div id="sitesList" class="list-group">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" value="admin" id="site_admin">
+                                        <label class="form-check-label" for="site_admin">Admin Panel</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" value="frontend" id="site_frontend">
+                                        <label class="form-check-label" for="site_frontend">Frontend App</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" value="backend" id="site_backend">
+                                        <label class="form-check-label" for="site_backend">Backend App</label>
+                                    </div>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Permissions</label>
@@ -704,24 +727,37 @@
             const description = document.getElementById('roleDescription').value;
             const permissions = Array.from(document.querySelectorAll('#permissionsList input:checked'))
                 .map(input => input.value);
+            const allowedSites = Array.from(document.querySelectorAll('#sitesList input:checked'))
+                .map(input => input.value);
             
             try {
-                const response = await fetch(`${API_URL}/api/roles/${roleName}`, {
-                    method: 'PUT',
+                const method = document.getElementById('roleName').readOnly ? 'PUT' : 'POST';
+                const url = method === 'PUT' ? 
+                    `${API_URL}/api/roles/${roleName}` : 
+                    `${API_URL}/api/roles`;
+
+                const response = await fetch(url, {
+                    method,
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ description, permissions })
+                    body: JSON.stringify({ 
+                        name: roleName,
+                        description, 
+                        permissions,
+                        allowedSites,
+                        isCustom: true
+                    })
                 });
                 
-                if (!response.ok) throw new Error('Failed to update role');
+                if (!response.ok) throw new Error('Failed to save role');
                 
                 roleModal.hide();
                 loadRoles();
             } catch (error) {
                 console.error('Error saving role:', error);
-                alert('Failed to save role permissions');
+                alert('Failed to save role: ' + error.message);
             }
         }
 
@@ -740,6 +776,7 @@
                 const role = await response.json();
                 
                 document.getElementById('roleName').value = role.name;
+                document.getElementById('roleName').readOnly = !role.isCustom;
                 document.getElementById('roleDescription').value = role.description || '';
                 
                 // Populate permissions checkboxes with the now-available AVAILABLE_PERMISSIONS
@@ -752,6 +789,12 @@
                     </div>
                 `).join('');
                 
+                // Update site access checkboxes
+                const sites = role.allowedSites || [];
+                document.querySelectorAll('#sitesList input').forEach(input => {
+                    input.checked = sites.includes(input.value);
+                });
+
                 roleModal.show();
             } catch (error) {
                 console.error('[Admin] Error editing role:', error);
@@ -783,6 +826,14 @@
         function hasPermission(roleName, permission) {
             // Implement permission check logic
             return false; // Default to false until we load actual permissions
+        }
+
+        function showAddRoleModal() {
+            document.getElementById('roleForm').reset();
+            document.getElementById('roleName').removeAttribute('readonly');
+            document.getElementById('roleName').value = '';
+            document.getElementById('roleDescription').value = '';
+            roleModal.show();
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

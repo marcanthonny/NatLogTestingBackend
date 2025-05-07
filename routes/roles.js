@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Role = require('../models/Role');
 const authMiddleware = require('../middleware/auth');
+const { AVAILABLE_SITES } = require('../config/roles');
 
 // Get all roles - modified to include better error handling and logging
 router.get('/', authMiddleware, async (req, res) => {
@@ -32,13 +33,23 @@ router.get('/:name', authMiddleware, async (req, res) => {
 // Create new role 
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { name, description, permissions } = req.body;
+    const { name, description, permissions, allowedSites, isCustom } = req.body;
     if (!name) return res.status(400).json({ error: 'Role name is required' });
+
+    // Validate sites
+    if (allowedSites) {
+      const invalidSites = allowedSites.filter(site => !AVAILABLE_SITES.includes(site));
+      if (invalidSites.length > 0) {
+        return res.status(400).json({ error: `Invalid sites: ${invalidSites.join(', ')}` });
+      }
+    }
 
     const role = new Role({
       name,
       description,
-      permissions: permissions || []
+      permissions: permissions || [],
+      allowedSites: allowedSites || [],
+      isCustom
     });
 
     await role.save();
@@ -52,10 +63,19 @@ router.post('/', authMiddleware, async (req, res) => {
 router.put('/:name', authMiddleware, async (req, res) => {
   try {
     console.log('[Roles] PUT /:name - Updating role:', req.params.name);
-    const { description, permissions } = req.body;
+    const { description, permissions, allowedSites } = req.body;
+    
+    // Validate sites
+    if (allowedSites) {
+      const invalidSites = allowedSites.filter(site => !AVAILABLE_SITES.includes(site));
+      if (invalidSites.length > 0) {
+        return res.status(400).json({ error: `Invalid sites: ${invalidSites.join(', ')}` });
+      }
+    }
+
     const role = await Role.findOneAndUpdate(
       { name: req.params.name },
-      { description, permissions },
+      { description, permissions, allowedSites },
       { new: true }
     );
     if (!role) return res.status(404).json({ error: 'Role not found' });
