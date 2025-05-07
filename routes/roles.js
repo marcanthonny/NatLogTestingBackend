@@ -3,12 +3,15 @@ const router = express.Router();
 const Role = require('../models/Role');
 const authMiddleware = require('../middleware/auth');
 
-// Get all roles
+// Get all roles - modified to include better error handling and logging
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const roles = await Role.find();
+    console.log('[Roles] Fetching all roles');
+    const roles = await Role.find().lean();
+    console.log('[Roles] Found roles:', roles);
     res.json(roles);
   } catch (error) {
+    console.error('[Roles] Error fetching roles:', error);
     res.status(500).json({ error: error.message });
   }
 });

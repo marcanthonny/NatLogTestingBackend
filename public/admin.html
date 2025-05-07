@@ -628,29 +628,41 @@
         async function loadRoles() {
             try {
                 const response = await fetch(`${API_URL}/api/roles`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
                 if (!response.ok) throw new Error('Failed to load roles');
                 const roles = await response.json();
+                console.log('[Admin] Loaded roles:', roles);
                 renderRoles(roles);
             } catch (error) {
-                console.error('Error loading roles:', error);
+                console.error('[Admin] Error loading roles:', error);
+                document.getElementById('roleTable').innerHTML = `
+                    <tr><td colspan="4" class="text-danger">Error loading roles: ${error.message}</td></tr>
+                `;
             }
         }
 
         function renderRoles(roles) {
             const tbody = document.getElementById('roleTable');
+            if (!Array.isArray(roles) || roles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">No roles found</td></tr>';
+                return;
+            }
+            
             tbody.innerHTML = roles.map(role => `
                 <tr>
-                    <td>${role.name}</td>
-                    <td>${role.description}</td>
-                    <td>${role.permissions.join(', ')}</td>
+                    <td>${role.name || 'N/A'}</td>
+                    <td>${role.description || 'No description'}</td>
+                    <td>${Array.isArray(role.permissions) ? role.permissions.join(', ') : 'No permissions'}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="editRole('${role.name}')">
+                        <button class="btn btn-sm btn-primary" onclick="editRole('${role._id}')">
                             Edit
                         </button>
                         ${role.name !== 'admin' ? `
-                            <button class="btn btn-sm btn-danger" onclick="deleteRole('${role.name}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteRole('${role._id}')">
                                 Delete
                             </button>
                         ` : ''}
@@ -682,6 +694,35 @@
             } catch (error) {
                 console.error('Error saving role:', error);
                 alert('Failed to save role permissions');
+            }
+        }
+
+        // Update editRole function
+        async function editRole(roleId) {
+            try {
+                const response = await fetch(`${API_URL}/api/roles/${roleId}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch role');
+                const role = await response.json();
+                
+                document.getElementById('roleName').value = roleId;
+                document.getElementById('roleDescription').value = role.description || '';
+                
+                // Populate permissions checkboxes
+                const permissionsList = document.getElementById('permissionsList');
+                permissionsList.innerHTML = AVAILABLE_PERMISSIONS.map(permission => `
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" value="${permission}" 
+                            id="perm_${permission}" ${role.permissions.includes(permission) ? 'checked' : ''}>
+                        <label class="form-check-label" for="perm_${permission}">${permission}</label>
+                    </div>
+                `).join('');
+                
+                roleModal.show();
+            } catch (error) {
+                console.error('[Admin] Error editing role:', error);
+                alert('Failed to load role details');
             }
         }
 
