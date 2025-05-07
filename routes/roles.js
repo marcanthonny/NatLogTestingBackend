@@ -5,20 +5,17 @@ const authMiddleware = require('../middleware/auth').authMiddleware;
 const { AVAILABLE_SITES } = require('../config/roles');
 
 // Get all roles
-router.get('/', async (req, res, next) => {
+router.get('/', async (req, res) => {
   try {
-    // Apply middleware manually if needed
-    if (!req.user) {
-      return authMiddleware(req, res, next);
-    }
-    
-    console.log('[Roles] GET / - Fetching all roles');
+    console.log('[Roles] Fetching all roles');
     const roles = await Role.find().lean();
-    console.log('[Roles] Found roles:', roles);
     res.json(roles);
   } catch (error) {
-    console.error('[Roles] Error fetching roles:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[Roles] Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch roles',
+      details: error.message 
+    });
   }
 });
 

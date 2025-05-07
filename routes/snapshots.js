@@ -13,13 +13,17 @@ const handleError = (res, error) => {
 };
 
 // Fix route paths by removing /snapshots prefix (it's added in app.js)
-router.get('/', authMiddleware, checkPermission('view:snapshots'), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    res.setHeader('Content-Type', 'application/json');
+    console.log('[Snapshots] Fetching snapshots');
     const snapshots = await dataHandler.getSnapshots();
     res.json(snapshots || []);
   } catch (error) {
-    handleError(res, error);
+    console.error('[Snapshots] Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch snapshots',
+      details: error.message
+    });
   }
 });
 

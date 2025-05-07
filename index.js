@@ -119,6 +119,18 @@ app.use((err, req, res, next) => {
 app.use(express.json());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001', 
+    'http://localhost:5000',
+    'https://aplnatlog-backend.vercel.app',
+    'https://natlogportal.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 // Serve static files with proper MIME types
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -127,21 +139,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
       res.setHeader('Content-Type', 'text/html');
     }
   }
-}));
-
-// Configure CORS first
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5000',
-    'https://aplnatlog-backend.vercel.app',
-    'https://natlogportal.vercel.app',
-    'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
 }));
 
 // Handle preflight requests
@@ -153,7 +150,7 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// Set up unprotected routes first
+// Set up unprotected routes BEFORE auth middleware
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'APL Natlog Backend API' });
 });
@@ -171,29 +168,26 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Auth routes must come BEFORE protecting /api routes
-app.use('/api/auth', authRoutes);
-
-// AFTER auth routes, then protect other API routes
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth/')) {
-    return next();
-  }
-  authMiddleware(req, res, next);
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    status: 'API is working',
+    env: process.env.NODE_ENV,
+    serverless: process.env.VERCEL === '1'
+  });
 });
 
-// Protected routes come last
+// Auth routes before protection
+app.use('/api/auth', authRoutes);
+
+// Apply auth middleware to remaining /api routes
+app.use('/api', authMiddleware);
+
+// Protected API routes
+app.use('/api/users', require('./routes/users'));
+app.use('/api/roles', require('./routes/roles'));
 app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/batch-correction', batchCorrectionRouter);
-app.use('/api/week-config', require('./routes/weekConfig')); // Add this line
-
-// Mount routes with proper prefixes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users')); // Make sure this line exists
-app.use('/api/snapshots', require('./routes/snapshots'));
-
-// Add roles route
-app.use('/api/roles', require('./routes/roles'));
+app.use('/api/week-config', require('./routes/weekConfig'));
 
 // Add connection status middleware before routes
 app.use((req, res, next) => {
@@ -210,15 +204,6 @@ app.use((req, res, next) => {
     }
   };
   next();
-});
-
-// Test endpoint
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    status: 'API is working',
-    env: process.env.NODE_ENV,
-    serverless: process.env.VERCEL === '1'
-  });
 });
 
 // Root endpoint

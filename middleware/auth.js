@@ -12,43 +12,36 @@ const publicPaths = [
   '/api/health'
 ];
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
-    // Skip auth for preflight requests
-    if (req.method === 'OPTIONS') {
+    // Skip auth for preflight and excluded paths
+    if (req.method === 'OPTIONS' || 
+        req.path === '/health' || 
+        req.path === '/test' || 
+        req.path.startsWith('/auth/')) {
       return next();
     }
 
-    // Check if path is public
-    if (publicPaths.some(path => req.path.startsWith(path))) {
-      return next();
-    }
-
-    // Get token from header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        error: 'Authentication required',
-        details: 'No valid authorization header found'
-      });
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
     }
 
-    // Verify token
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-
+    
     // Add user info to request
     req.user = decoded;
     next();
   } catch (err) {
-    console.error('[Auth] Middleware error:', err.message);
+    console.error('[Auth] Error:', err.message);
     if (err.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Invalid token' });
     }
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired' });
     }
-    res.status(500).json({ error: 'Internal server error', details: err.message });
+    res.status(500).json({ error: 'Auth error', details: err.message });
   }
 };
 
