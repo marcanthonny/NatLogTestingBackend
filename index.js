@@ -129,7 +129,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// Configure CORS
+// Configure CORS first
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -153,9 +153,22 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// Simple admin route - no content-type override needed
+// Set up unprotected routes first
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'APL Natlog Backend API' });
+});
+
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/api/health', async (req, res) => {
+  try {
+    const status = await dataHandler.getHealthStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ status: 'error', error: error.message });
+  }
 });
 
 // Auth routes must come BEFORE protecting /api routes
