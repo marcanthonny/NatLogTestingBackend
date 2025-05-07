@@ -1,156 +1,50 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const connectDB = require('./config/database');
 const mongoose = require('mongoose');
 const path = require('path');
 const authRoutes = require('./routes/auth');
 const snapshotsRouter = require('./routes/snapshots');
-const authMiddleware = require('./middleware/auth');
+const { authMiddleware } = require('./middleware/auth'); // Fixed import
 const dataHandler = require('./utils/dataHandler');
 const batchCorrectionRouter = require('./routes/batchCorrection');
 
-// Log startup info
-console.log('\n🚀 Starting APL Natlog Backend...');
-console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-console.log(`   Time: ${new Date().toISOString()}`);
+console.log('🚀 Starting APL Natlog Backend...');
 
-// Initialize Express
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize MongoDB connection with better error handling
-let dbInitialized = false;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000;
-let retryCount = 0;
-
-const initializeDB = async () => {
-  if (dbInitialized) return;
-  
-  try {
-    console.log('[Server] Attempting database connection...');
-    const connection = await connectDB();
-    
-    if (!connection) {
-      throw new Error('Connection returned null');
-    }
-
-    // Wait for connection to be ready
-    if (connection.connection.readyState !== 1) {
-      await new Promise((resolve) => {
-        connection.connection.once('connected', resolve);
-        setTimeout(() => {
-          if (connection.connection.readyState !== 1) {
-            throw new Error('Connection timeout');
-          }
-        }, 5000);
-      });
-    }
-
-    dbInitialized = true;
-    retryCount = 0;
-    console.log('[Server] MongoDB connected successfully:', {
-      database: connection.connection.name,
-      host: connection.connection.host,
-      state: connection.connection.readyState
-    });
-
-    return connection;
-  } catch (error) {
-    console.error('[Server] Database connection failed:', error.message);
-    dbInitialized = false;
-
-    // Implement retry logic
-    if (retryCount < MAX_RETRIES) {
-      retryCount++;
-      console.log(`[Server] Retrying connection in ${RETRY_DELAY/1000}s... (${retryCount}/${MAX_RETRIES})`);
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      return initializeDB();
-    }
-
-    throw error;
-  }
-};
-
-// Initialize database before setting up routes
-(async () => {
-  try {
-    await initializeDB();
-  } catch (error) {
-    console.error('[Server] Failed to initialize database after retries:', error.message);
-  }
-})();
-
-// Add connection check middleware
-app.use(async (req, res, next) => {
-  if (!dbInitialized && mongoose.connection.readyState !== 1) {
-    await initializeDB();
-  }
-  next();
-});
-
-// Add detailed connection status to middleware
-app.use((req, res, next) => {
-  const mongoState = mongoose.connection.readyState;
-  req.dbStatus = {
-    connected: mongoState === 1,
-    state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState],
-    details: {
-      host: mongoose.connection.host,
-      name: mongoose.connection.name,
-      readyState: mongoState
-    }
-  };
-  next();
-});
-
-// Enhanced error handling middleware for serverless
-app.use((err, req, res, next) => {
-  console.error('Global error handler caught:', err);
-  res.status(500).json({ 
-    error: 'Server error',
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
-  });
-});
-
-// Configure middleware FIRST, before any routes
-app.use(express.json());
+// Configure middleware
+app.use(express.json({ limit: '50mb' }));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+
+// Configure CORS
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'http://localhost:3001', 
+    'http://localhost:3001',
     'http://localhost:5000',
     'https://aplnatlog-backend.vercel.app',
     'https://natlogportal.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Serve static files with proper MIME types
-app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html');
-    }
-  }
-}));
-
-// Handle preflight requests
-app.options('*', cors());
-
-// Only set JSON content type for API routes
-app.use('/api', (req, res, next) => {
-  res.setHeader('Content-Type', 'application/json');
-  next();
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
 });
 
-// Set up unprotected routes BEFORE auth middleware
+// Public routes
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'APL Natlog Backend API' });
 });
@@ -160,147 +54,30 @@ app.get('/admin', (req, res) => {
 });
 
 app.get('/api/health', async (req, res) => {
-  try {
-    const status = await dataHandler.getHealthStatus();
-    res.json(status);
-  } catch (error) {
-    res.status(500).json({ status: 'error', error: error.message });
-  }
+  res.json({ status: 'ok', uptime: process.uptime() });
 });
 
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    status: 'API is working',
-    env: process.env.NODE_ENV,
-    serverless: process.env.VERCEL === '1'
-  });
-});
-
-// Auth routes before protection
+// Auth routes (unprotected)
 app.use('/api/auth', authRoutes);
 
-// Apply auth middleware to remaining /api routes
-app.use('/api', authMiddleware);
-
 // Protected API routes
-app.use('/api/users', require('./routes/users'));
-app.use('/api/roles', require('./routes/roles'));
-app.use('/api/snapshots', snapshotsRouter);
-app.use('/api/batch-correction', batchCorrectionRouter);
-app.use('/api/week-config', require('./routes/weekConfig'));
+app.use('/api/users', authMiddleware, require('./routes/users'));
+app.use('/api/roles', authMiddleware, require('./routes/roles'));
+app.use('/api/snapshots', authMiddleware, snapshotsRouter);
+app.use('/api/batch-correction', authMiddleware, batchCorrectionRouter);
+app.use('/api/week-config', authMiddleware, require('./routes/weekConfig'));
 
-// Add connection status middleware before routes
-app.use((req, res, next) => {
-  // Add fresh DB status check
-  const mongoState = mongoose.connection.readyState;
-  req.dbStatus = {
-    connected: mongoState === 1,
-    state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState],
-    details: {
-      host: mongoose.connection.host,
-      name: mongoose.connection.name,
-      readyState: mongoState,
-      initialized: dbInitialized
-    }
-  };
-  next();
-});
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'APL Natlog Backend API',
-    version: '1.0.0',
-    env: process.env.NODE_ENV || 'development',
-    database: {
-      connected: req.dbStatus.connected,
-      state: req.dbStatus.state,
-      name: mongoose.connection.name,
-      host: mongoose.connection.host
-    }
-  });
-});
-
-// Health check endpoint
-app.get('/api/health', async (req, res) => {
-  try {
-    const status = await dataHandler.getHealthStatus();
-    res.setHeader('Content-Type', 'application/json');
-    res.json(status);
-  } catch (error) {
-    console.error('[Health] Check failed:', error);
-    res.setHeader('Content-Type', 'application/json');
-    res.status(500).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error.message,
-      database: {
-        connected: false,
-        state: 'error'
-      }
-    });
-  }
-});
-
-// Optimized file upload route for serverless
-app.post('/api/upload', (req, res) => {
-  try {
-    const { fileData, fileName, fileType, category } = req.body;
-    
-    if (!fileData || !fileName) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing file data or file name'
-      });
-    }
-    
-    // Process the data in memory
-    const processedData = {
-      fileName,
-      fileType,
-      category,
-      data: fileData,
-      processedAt: new Date().toISOString()
-    };
-    
-    res.json({
-      success: true,
-      data: processedData
-    });
-  } catch (error) {
-    console.error('Error processing upload:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'File processing failed'
-    });
-  }
-});
-
-// Error handler for serverless environment
+// Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
-    path: req.path,
-    serverless: true,
-    env: process.env.NODE_ENV
+    error: err.message || 'Internal Server Error'
   });
 });
 
-// Add error handling middleware
-app.use((err, req, res, next) => {
-  console.error('[API Error]:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Export the Express app for serverless deployment
-module.exports = app;
-
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;
