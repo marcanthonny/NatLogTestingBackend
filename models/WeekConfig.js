@@ -1,12 +1,21 @@
 const mongoose = require('mongoose');
 
-const weekSchema = new mongoose.Schema({
-  startDate: String,
-  endDate: String,
-  target: Number
-});
+const weekSchema = {
+  target: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100
+  },
+  startDate: {
+    type: Date
+  },
+  endDate: {
+    type: Date
+  }
+};
 
-const configSchema = new mongoose.Schema({
+const weekConfigSchema = new mongoose.Schema({
   ira: {
     week1: weekSchema,
     week2: weekSchema,
@@ -18,11 +27,9 @@ const configSchema = new mongoose.Schema({
     week2: weekSchema,
     week3: weekSchema,
     week4: weekSchema
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('WeekConfig', configSchema);
+module.exports = mongoose.model('WeekConfig', weekConfigSchema);
