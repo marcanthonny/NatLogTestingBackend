@@ -5,13 +5,20 @@
     <title>APL Natlog Backend Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body {
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+        }
+        
         .login-container {
             max-width: 400px;
             margin: 100px auto;
         }
+        
         .dashboard-container {
             display: none;
         }
+        
         .status-indicator {
             width: 12px;
             height: 12px;
@@ -19,9 +26,63 @@
             display: inline-block;
             margin-right: 8px;
         }
+        
         .status-connected { background-color: #28a745; }
         .status-disconnected { background-color: #dc3545; }
         .status-locked { background-color: #ffc107; }
+
+        /* Dark theme overrides */
+        .card {
+            background-color: #000000 !important;
+            border: 1px solid #ffffff !important;
+        }
+        
+        .card-body {
+            color: #ffffff !important;
+        }
+        
+        .modal-content {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 1px solid #ffffff !important;
+        }
+        
+        .table {
+            color: #ffffff !important;
+        }
+        
+        .form-control, .form-select {
+            background-color: #333333 !important;
+            border-color: #666666 !important;
+            color: #ffffff !important;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: #404040 !important;
+            color: #ffffff !important;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #333333 !important;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #333333 !important;
+        }
+
+        pre.bg-dark {
+            background-color: #000000 !important;
+            border: 1px solid #333333 !important;
+        }
+
+        .text-muted {
+            color: #999999 !important;
+        }
+
+        .table > :not(caption) > * > * {
+            background-color: #000000 !important;
+            border-color: #333333 !important;
+        }
     </style>
 </head>
 <body class="bg-light">
