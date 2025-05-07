@@ -1,44 +1,50 @@
 const express = require('express');
 const router = express.Router();
-const dataHandler = require('../utils/dataHandler');
-const { authMiddleware, checkPermission } = require('../middleware/auth');
+const { checkPermission } = require('../utils/permissionUtils');
+const { authMiddleware } = require('../middleware/auth');
 
-// Add error handler middleware
-const handleError = (res, error) => {
-  console.error('[Snapshots] Error:', error);
-  res.status(500).json({
-    error: error.message || 'Internal server error',
-    timestamp: new Date().toISOString()
-  });
-};
+// Protected routes
+router.use(authMiddleware);
 
-// Fix route paths by removing /snapshots prefix (it's added in app.js)
+// Get all snapshots
 router.get('/', async (req, res) => {
   try {
-    console.log('[Snapshots] Fetching snapshots');
-    const snapshots = await dataHandler.getSnapshots();
-    res.json(snapshots || []);
+    const hasPermission = await checkPermission(req.user, 'view:snapshots');
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+
+    const snapshots = await Snapshot.find();
+    res.json(snapshots);
   } catch (error) {
-    console.error('[Snapshots] Error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch snapshots',
-      details: error.message
-    });
+    console.error('Error fetching snapshots:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-router.post('/', authMiddleware, checkPermission('create:snapshots'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
+    const hasPermission = await checkPermission(req.user, 'create:snapshots');
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+
     res.setHeader('Content-Type', 'application/json');
     const snapshot = await dataHandler.addSnapshot(req.body);
     res.status(201).json(snapshot);
   } catch (error) {
-    handleError(res, error);
+    console.error('Error creating snapshot:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/:id', authMiddleware, checkPermission('delete:snapshots'), async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
+    const hasPermission = await checkPermission(req.user, 'delete:snapshots');
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+
     res.setHeader('Content-Type', 'application/json');
     const snapshot = await dataHandler.deleteSnapshot(req.params.id);
     if (!snapshot) {
@@ -46,12 +52,18 @@ router.delete('/:id', authMiddleware, checkPermission('delete:snapshots'), async
     }
     res.json({ message: 'Snapshot deleted successfully', snapshot });
   } catch (error) {
-    handleError(res, error);
+    console.error('Error deleting snapshot:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/:id', authMiddleware, checkPermission('view:snapshots'), async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
+    const hasPermission = await checkPermission(req.user, 'view:snapshots');
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+
     res.setHeader('Content-Type', 'application/json');
     const snapshot = await dataHandler.getSnapshotById(req.params.id);
     if (!snapshot) {
@@ -59,7 +71,8 @@ router.get('/:id', authMiddleware, checkPermission('view:snapshots'), async (req
     }
     res.json(snapshot);
   } catch (error) {
-    handleError(res, error);
+    console.error('Error fetching snapshot:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

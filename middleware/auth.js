@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 const Role = require('../models/Role');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -13,7 +14,7 @@ const publicPaths = [
   '/'
 ];
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
     // Skip auth for options and public paths
     if (req.method === 'OPTIONS' || publicPaths.some(path => req.path.startsWith(path))) {
@@ -27,16 +28,27 @@ const authMiddleware = (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    
+    // Get full user object
+    const user = await User.findById(decoded.userId)
+      .select('-password')
+      .lean();
+      
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    req.user = user;
     next();
   } catch (err) {
+    console.error('[Auth] Error:', err);
     if (err.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Invalid token' });
     }
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired' });
     }
-    res.status(500).json({ error: 'Auth error: ' + err.message });
+    res.status(500).json({ error: 'Auth error' });
   }
 };
 
