@@ -9,7 +9,6 @@ const { authMiddleware } = require('./middleware/auth'); // Fixed import
 const dataHandler = require('./utils/dataHandler');
 const batchCorrectionRouter = require('./routes/batchCorrection');
 const limiter = require('./middleware/rateLimit');
-const { startCleanupTask } = require('./utils/sessionManager');
 
 console.log('🚀 Starting APL Natlog Backend...');
 
@@ -85,11 +84,6 @@ app.use('/api/roles', authMiddleware, require('./routes/roles'));
 app.use('/api/snapshots', authMiddleware, snapshotsRouter);
 app.use('/api/batch-correction', authMiddleware, batchCorrectionRouter);
 app.use('/api/week-config', authMiddleware, require('./routes/weekConfig'));
-
-// Add keepalive endpoint
-app.get('/api/keepalive', (req, res) => {
-  res.json({ status: 'ok' });
-});
 
 // Modify error handler to ensure response
 app.use((err, req, res, next) => {

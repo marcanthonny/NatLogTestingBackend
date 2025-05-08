@@ -16,7 +16,7 @@ const publicPaths = [
 
 const authMiddleware = async (req, res, next) => {
   try {
-    // Skip auth for options and public paths
+    // Skip auth for public paths
     if (req.method === 'OPTIONS' || publicPaths.some(path => req.path.startsWith(path))) {
       return next();
     }
@@ -29,30 +29,19 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Get fresh user data
-    const user = await User.findById(decoded.userId)
-      .select('-password')
-      .lean();
-      
+    // Get fresh user data and role permissions
+    const user = await User.findById(decoded.userId).select('-password').lean();
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Get fresh role permissions
     const role = await Role.findOne({ name: user.role });
     
-    // Attach user and permissions to request
+    // Attach user data to request
     req.user = {
       ...user,
-      permissions: role ? role.permissions : [],
-      sessionData: decoded.sessionData // Preserve session data from token
+      permissions: role ? role.permissions : []
     };
-
-    // Check if token needs refresh (optional)
-    if (decoded.iat < Date.now()/1000 - 3600) { // Refresh after 1 hour
-      const newToken = generateToken(req.user);
-      res.setHeader('X-New-Token', newToken);
-    }
 
     next();
   } catch (err) {
@@ -63,26 +52,8 @@ const authMiddleware = async (req, res, next) => {
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired' });
     }
-    res.status(500).json({ error: 'Auth error: ' + err.message });
+    res.status(500).json({ error: 'Auth error' });
   }
 };
 
-const generateToken = (user) => {
-  return jwt.sign(
-    {
-      userId: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      permissions: user.permissions,
-      sessionData: {
-        lastActive: new Date(),
-        userAgent: req.headers['user-agent']
-      }
-    },
-    JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-};
-
-module.exports = { authMiddleware, generateToken };
+module.exports = { authMiddleware };

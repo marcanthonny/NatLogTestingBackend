@@ -8,79 +8,48 @@ const Session = require('../models/Session'); // Add Session model
 // Regular login endpoint for frontend users (both admin and regular)
 router.post('/login', async (req, res) => {
   try {
-    console.log('[Auth] Login attempt:', { username: req.body.username });
     const { username, password } = req.body;
     
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    // Debug: Check if user exists
     const user = await User.findOne({ username: username.toLowerCase() })
       .select('+password +role')
       .exec();
-    console.log('[Auth] User found:', { exists: !!user, username: username });
     
     if (!user) {
-      console.log('[Auth] User not found:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Debug: Check password comparison
     const isValidPassword = await user.comparePassword(password);
-    console.log('[Auth] Password check:', { isValid: isValidPassword, username: username });
-    
     if (!isValidPassword) {
-      console.log('[Auth] Invalid password for user:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Fetch user's role and permissions
+    // Get role permissions
     const userRole = await Role.findOne({ name: user.role });
     const permissions = userRole ? userRole.permissions : [];
 
+    // Create token with permissions
     const token = jwt.sign(
       { 
-        userId: user._id, 
-        username: user.username, 
-        email: user.email,
+        userId: user._id,
+        username: user.username,
         role: user.role,
-        permissions, // Add permissions to token
-        sessionData: {
-          lastActive: new Date(),
-          userAgent: req.headers['user-agent']
-        }
+        permissions
       },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    // Store session in Redis or MongoDB
-    const session = {
-      userId: user._id,
-      username: user.username,
-      role: user.role,
-      permissions,
-      loginTime: new Date(),
-      lastActive: new Date()
-    };
-
-    await Session.create(session);
-
-    // Update user's last login
-    await User.findByIdAndUpdate(user._id, {
-      lastLogin: new Date()
-    });
-
-    console.log('[Auth] Login successful for user:', username);
     res.json({ 
       success: true,
       token,
       user: {
         username: user.username,
-        email: user.email,
         role: user.role,
-        permissions // Send permissions to frontend
+        permissions
       }
     });
 
