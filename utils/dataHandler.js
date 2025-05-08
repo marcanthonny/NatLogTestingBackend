@@ -4,6 +4,8 @@ const Snapshot = require('../models/Snapshot'); // Assuming you have a Snapshot 
 class DataHandler {
   constructor() {
     this.initialized = false;
+    this.connectionTimeout = 5000;
+    this.operationTimeout = 2000;
   }
 
   async init() {
@@ -15,8 +17,8 @@ class DataHandler {
         await mongoose.connect(process.env.MONGODB_URL, {
           useNewUrlParser: true,
           useUnifiedTopology: true,
-          serverSelectionTimeoutMS: 2000, // Reduced from 3000
-          socketTimeoutMS: 5000, // Reduced from 8000
+          serverSelectionTimeoutMS: this.connectionTimeout,
+          socketTimeoutMS: this.operationTimeout,
           maxPoolSize: 1,
           minPoolSize: 0,
           maxIdleTimeMS: 3000, // Reduced from 5000
@@ -24,7 +26,7 @@ class DataHandler {
           autoCreate: false // Disable automatic collection creation
         });
         
-        // Add aggressive cleanup
+        // Monitor connection state
         mongoose.connection.on('disconnected', () => {
           console.log('[MongoDB] Disconnected - cleaning up');
           this.initialized = false;
@@ -32,22 +34,23 @@ class DataHandler {
           mongoose.disconnect().catch(console.error);
         });
         
-        // Force close after 5s
-        setTimeout(() => {
-          if (mongoose.connection.readyState === 1) {
-            console.log('[MongoDB] Force closing idle connection');
-            mongoose.connection.close()
-              .catch(err => console.error('[MongoDB] Close error:', err));
-          }
-        }, 5000);
+        mongoose.connection.on('error', (err) => {
+          console.error('[MongoDB] Connection error:', err);
+          this.initialized = false;
+        });
       }
+
+      // Verify connection is ready
+      if (mongoose.connection.readyState !== 1) {
+        throw new Error('Database not connected');
+      }
+
+      this.initialized = true;
     } catch (error) {
       console.error('[MongoDB] Connection error:', error);
       this.initialized = false;
       throw new Error('Database connection failed: ' + error.message);
     }
-
-    this.initialized = true;
   }
 
   async getHealthStatus() {

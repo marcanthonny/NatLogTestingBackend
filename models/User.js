@@ -44,13 +44,22 @@ const userSchema = new mongoose.Schema({
 // Fix compound index syntax
 userSchema.index({ username: 1, role: 1 });
 
-// Fix password comparison method
+// Fix password comparison method with error handling
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
+    if (!this.password) {
+      console.error('[Auth] Password comparison failed - no password stored');
+      return false;
+    }
+
     // First try bcrypt compare in case it's a hashed password
     if (this.password.startsWith('$2')) {
       return await bcrypt.compare(candidatePassword, this.password);
     }
+    
+    // Log warning for unhashed password
+    console.warn('[Auth] Unhashed password found for user:', this.username);
+    
     // Fallback to direct comparison for legacy passwords
     return candidatePassword === this.password;
   } catch (error) {

@@ -4,15 +4,27 @@ const Role = require('../models/Role');
 const authMiddleware = require('../middleware/auth').authMiddleware;
 const { AVAILABLE_SITES } = require('../config/roles');
 
-// Get all roles
+// Get all roles with optimization
 router.get('/', async (req, res) => {
   try {
     console.log('[Roles] Fetching all roles');
+    
+    // Set headers for JSON and caching
     res.setHeader('Content-Type', 'application/json');
-    const roles = await Role.find().lean();
+    res.setHeader('Cache-Control', 'private, max-age=10');
+    
+    const roles = await Role.find()
+      .select('name description permissions allowedSites')
+      .lean()
+      .maxTimeMS(2000)
+      .exec();
+
     res.json(roles);
   } catch (error) {
     console.error('[Roles] Error:', error);
+    if (error.name === 'MongoTimeoutError') {
+      return res.status(504).json({ error: 'Request timeout - please try again' });
+    }
     res.status(500).json({ 
       error: 'Failed to fetch roles',
       details: error.message 
@@ -20,20 +32,23 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get single role by name
+// Get single role by name with optimization
 router.get('/:name', async (req, res) => {
   try {
     console.log('[Roles] GET /:name - Fetching role:', req.params.name);
     res.setHeader('Content-Type', 'application/json');
-    const role = await Role.findOne({ name: req.params.name }).lean();
+    
+    const role = await Role.findOne({ name: req.params.name })
+      .select('name description permissions allowedSites isCustom')
+      .lean()
+      .maxTimeMS(1000)
+      .exec();
     
     if (!role) {
       return res.status(404).json({ error: 'Role not found' });
     }
 
-    console.log('[Roles] Found role:', role);
     res.json(role);
-
   } catch (error) {
     console.error('[Roles] Error fetching role:', error);
     res.status(500).json({ error: error.message });

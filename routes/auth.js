@@ -5,7 +5,7 @@ const User = require('../models/User');
 const Role = require('../models/Role'); // Add Role model
 const Session = require('../models/Session'); // Add Session model
 
-// Regular login endpoint for frontend users (both admin and regular)
+// Regular login endpoint with improved error handling
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -14,34 +14,54 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.error('[Auth] Database not connected, state:', mongoose.connection.readyState);
+      return res.status(503).json({ error: 'Database connection error', retryable: true });
+    }
+
+    // Add timeout for user lookup
     const user = await User.findOne({ username: username.toLowerCase() })
       .select('+password +role')
+      .maxTimeMS(2000)
       .exec();
     
     if (!user) {
+      console.log('[Auth] Login failed - user not found:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isValidPassword = await user.comparePassword(password);
+    const isValidPassword = await user.comparePassword(password).catch(err => {
+      console.error('[Auth] Password comparison error:', err);
+      return false;
+    });
+
     if (!isValidPassword) {
+      console.log('[Auth] Login failed - invalid password for user:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Get role permissions
-    const userRole = await Role.findOne({ name: user.role });
+    // Get role with timeout
+    const userRole = await Role.findOne({ name: user.role })
+      .maxTimeMS(1000)
+      .lean()
+      .exec()
+      .catch(err => {
+        console.error('[Auth] Role lookup error:', err);
+        return null;
+      });
+
     const permissions = userRole ? userRole.permissions : [];
 
-    // Create token with permissions
     const token = jwt.sign(
-      { 
-        userId: user._id,
-        username: user.username,
-        role: user.role,
-        permissions
-      },
+      { userId: user._id, username: user.username, role: user.role, permissions },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    // Update last login
+    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() })
+      .catch(err => console.error('[Auth] Failed to update last login:', err));
 
     res.json({ 
       success: true,
@@ -55,7 +75,12 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('[Auth] Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    const status = error.name === 'MongoTimeoutError' ? 504 : 500;
+    res.status(status).json({ 
+      error: 'Internal server error',
+      retryable: true,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

@@ -156,15 +156,44 @@ async function initializeRoles() {
       if (err.code !== 48) console.error('Error creating roles collection:', err);
     });
 
-    // Initialize default roles from config
+    // Initialize default roles from config with special handling for admin
     for (const [name, roleConfig] of Object.entries(ROLES)) {
+      const roleData = {
+        name,
+        description: roleConfig.description,
+        permissions: roleConfig.permissions,
+        allowedSites: roleConfig.allowedSites,
+        isCustom: false
+      };
+
+      // Special handling for admin role to ensure all permissions
+      if (name === 'admin') {
+        roleData.permissions = [
+          '*',
+          'view:snapshots',
+          'create:snapshots',
+          'edit:snapshots', 
+          'delete:snapshots',
+          'view:batches',
+          'create:batches',
+          'edit:batches',
+          'delete:batches',
+          'view:users',
+          'create:users',
+          'edit:users',
+          'delete:users',
+          'view:roles',
+          'create:roles',
+          'edit:roles',
+          'delete:roles',
+          'admin:access'
+        ];
+        roleData.allowedSites = ['admin', 'frontend', 'backend'];
+      }
+
       await Role.findOneAndUpdate(
         { name },
-        {
-          name,
-          description: roleConfig.description,
-          permissions: roleConfig.permissions
-        },
+        roleData,
         { upsert: true, new: true }
       );
     }

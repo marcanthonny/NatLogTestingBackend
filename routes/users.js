@@ -17,15 +17,32 @@ const isAdmin = async (req, res, next) => {
   }
 };
 
-// Get all users - Changed from '/' to match frontend request
+// Add cache control headers
+const setCacheHeaders = (res) => {
+  res.set('Cache-Control', 'private, max-age=10');
+  res.set('ETag', Math.random().toString(36));
+};
+
+// Get all users with optimization
 router.get('/', async (req, res) => {
   try {
     console.log('[Users] Fetching all users');
-    const users = await User.find({}).select('-password').lean();
+    
+    // Use lean() for better performance and limit fields
+    const users = await User.find({})
+      .select('username email role active')
+      .lean()
+      .maxTimeMS(2000) // 2 second timeout
+      .exec();
+
     console.log('[Users] Found users:', users.length);
+    setCacheHeaders(res);
     res.json(users);
   } catch (error) {
     console.error('[Users] Error fetching users:', error);
+    if (error.name === 'MongoTimeoutError') {
+      return res.status(504).json({ error: 'Request timeout - please try again' });
+    }
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
