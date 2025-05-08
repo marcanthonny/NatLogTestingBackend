@@ -15,28 +15,31 @@ class DataHandler {
         await mongoose.connect(process.env.MONGODB_URL, {
           useNewUrlParser: true,
           useUnifiedTopology: true,
-          serverSelectionTimeoutMS: 3000,
-          socketTimeoutMS: 8000,
+          serverSelectionTimeoutMS: 2000, // Reduced from 3000
+          socketTimeoutMS: 5000, // Reduced from 8000
           maxPoolSize: 1,
           minPoolSize: 0,
-          maxIdleTimeMS: 5000,
-          family: 4
+          maxIdleTimeMS: 3000, // Reduced from 5000
+          family: 4,
+          autoCreate: false // Disable automatic collection creation
         });
         
-        // Handle serverless connection cleanup
+        // Add aggressive cleanup
         mongoose.connection.on('disconnected', () => {
           console.log('[MongoDB] Disconnected - cleaning up');
           this.initialized = false;
           mongoose.connection.removeAllListeners();
+          mongoose.disconnect().catch(console.error);
         });
         
-        // Force close connection after 8s
+        // Force close after 5s
         setTimeout(() => {
           if (mongoose.connection.readyState === 1) {
-            console.log('[MongoDB] Closing idle connection');
-            mongoose.connection.close();
+            console.log('[MongoDB] Force closing idle connection');
+            mongoose.connection.close()
+              .catch(err => console.error('[MongoDB] Close error:', err));
           }
-        }, 8000);
+        }, 5000);
       }
     } catch (error) {
       console.error('[MongoDB] Connection error:', error);

@@ -45,32 +45,29 @@ const MongoStore = {
 // Configure rate limiter with proxy support
 const limiter = rateLimit({
   store: MongoStore,
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute
+  windowMs: 30 * 1000, // Reduced to 30 seconds
+  max: 50, // Reduced limit
   standardHeaders: true,
   legacyHeaders: false,
   trustProxy: true, // Trust X-Forwarded-For header
-  message: { error: 'Too many requests, please try again later' },
-  skip: (req) => req.path === '/api/health', // Skip health checks
-  keyGenerator: (req) => {
-    // Use X-Forwarded-For header if available (from Vercel)
-    return req.headers['x-forwarded-for'] || req.ip;
-  },
+  message: { error: 'Too many requests, please try again' },
   skipFailedRequests: true, // Don't count failed requests
   skip: (req) => {
     // Skip more paths in production
     return req.path === '/api/health' || 
            req.path === '/admin' ||
-           req.path === '/favicon.ico';
+           req.path === '/favicon.ico' ||
+           req.path === '/' ||
+           req.path.startsWith('/api/auth/');
   },
   handler: (req, res) => {
     res.status(429).json({
-      error: 'Too many requests, please try again later',
-      retryAfter: Math.ceil(limiter.windowMs / 1000)
+      error: 'Rate limit exceeded',
+      retryAfter: Math.ceil(30)
     });
   },
   // Add timeout for store operations
-  timeout: 5000
+  timeout: 2000 // Reduced timeout
 });
 
 module.exports = limiter;

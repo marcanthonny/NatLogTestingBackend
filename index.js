@@ -43,11 +43,12 @@ app.use(limiter);
 mongoose.connect(process.env.MONGODB_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true, 
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 10000,
-  keepAlive: false, // Disable keepAlive
-  maxPoolSize: 1,   // Minimize connections for serverless
-  family: 4
+  serverSelectionTimeoutMS: 2000, // Reduced timeout
+  socketTimeoutMS: 5000, // Reduced timeout
+  keepAlive: false,
+  maxPoolSize: 1,
+  family: 4,
+  autoCreate: false
 }).then(() => {
   console.log('Connected to MongoDB');
 }).catch(err => {
@@ -63,6 +64,17 @@ mongoose.connection.on('error', err => {
 // Add cleanup on disconnect
 mongoose.connection.on('disconnected', () => {
   console.log('MongoDB disconnected - cleaning up');
+});
+
+// Add connection cleanup
+mongoose.connection.on('connected', () => {
+  setTimeout(() => {
+    if (mongoose.connection.readyState === 1) {
+      console.log('[MongoDB] Closing idle connection after timeout');
+      mongoose.connection.close()
+        .catch(err => console.error('[MongoDB] Close error:', err));
+    }
+  }, 5000);
 });
 
 // Public routes
@@ -88,25 +100,29 @@ app.use('/api/week-config', authMiddleware, require('./routes/weekConfig'));
 // Modify error handler to ensure response
 app.use((err, req, res, next) => {
   console.error('Error details:', {
+    name: err.name,
     message: err.message,
-    stack: err.stack,
     path: req.path,
-    method: req.method
+    method: req.method,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 
-  // Handle timeouts specifically
-  if (err.name === 'TimeoutError') {
-    return res.status(503).json({
-      error: 'Service temporarily unavailable, please try again'
+  // Handle various timeout scenarios
+  if (err.name === 'TimeoutError' || 
+      err.message?.includes('timeout') ||
+      err.message?.includes('TIMEDOUT')) {
+    return res.status(504).json({
+      error: 'Request timeout - please try again',
+      retryable: true
     });
   }
 
-  // Always send a response, even for timeouts
   if (!res.headersSent) {
     res.status(err.status || 500).json({
       error: err.message || 'Internal Server Error',
       path: req.path,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      retryable: true
     });
   }
 });
