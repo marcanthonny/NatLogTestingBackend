@@ -19,9 +19,17 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 // Configure middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(bodyParser.json({ limit: '50mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+
+// Add timeout middleware
+app.use((req, res, next) => {
+  res.setTimeout(5000, () => {
+    res.status(504).json({ error: 'Request timeout' });
+  });
+  next();
+});
 
 // Configure CORS
 app.use(cors({
@@ -97,6 +105,11 @@ app.use('/api/snapshots', authMiddleware, snapshotsRouter);
 app.use('/api/batch-correction', authMiddleware, batchCorrectionRouter);
 app.use('/api/week-config', authMiddleware, require('./routes/weekConfig'));
 
+// Configure routes with shorter timeouts
+app.use('/api/users', require('./routes/users'));
+app.use('/api/roles', require('./routes/roles')); 
+app.use('/api/snapshots', require('./routes/snapshots'));
+
 // Modify error handler to ensure response
 app.use((err, req, res, next) => {
   console.error('Error details:', {
@@ -125,6 +138,12 @@ app.use((err, req, res, next) => {
       retryable: true
     });
   }
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // Don't start cleanup task in production/serverless
