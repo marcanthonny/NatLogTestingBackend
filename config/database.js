@@ -22,17 +22,19 @@ const connectDB = async () => {
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000, // Further reduced for serverless
-      socketTimeoutMS: 10000, // Further reduced for serverless
-      keepAlive: false, // Disabled for serverless
+      serverSelectionTimeoutMS: 3000, // Reduced timeout
+      socketTimeoutMS: 8000, // Reduced timeout
+      // Remove keepAlive as it's deprecated
       dbName: config.isLocal ? 'aplnatlog-local' : 'aplnatlog-backend',
       retryWrites: true,
       w: 'majority',
       ssl: !config.isLocal,
       autoIndex: config.isLocal,
       connectTimeoutMS: 5000,
-      maxPoolSize: config.isLocal ? 10 : 1,
-      family: 4 // Force IPv4
+      maxPoolSize: 1, // Always use minimal pool for serverless
+      minPoolSize: 0, // Allow pool to shrink to 0
+      maxIdleTimeMS: 5000, // Close idle connections faster
+      family: 4
     };
 
     // Remove any existing listeners to prevent memory leaks
