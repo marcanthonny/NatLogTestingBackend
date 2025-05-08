@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { checkPermission } = require('../utils/permissionUtils');
 const { authMiddleware } = require('../middleware/auth');
 const Snapshot = require('../models/Snapshot');
 const dataHandler = require('../utils/dataHandler');
@@ -11,70 +10,50 @@ router.use(authMiddleware);
 // Get all snapshots
 router.get('/', async (req, res) => {
   try {
-    const hasPermission = await checkPermission(req.user, 'view:snapshots');
-    if (!hasPermission) {
-      return res.status(403).json({ error: 'You dont have the permission to view snapshots' });
-    }
-
-    const snapshots = await Snapshot.find();
+    const snapshots = await Snapshot.find().lean().exec();
     res.json(snapshots);
   } catch (error) {
     console.error('Error fetching snapshots:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch snapshots' });
   }
 });
 
-router.post('/', async (req, res) => {
-  try {
-    const hasPermission = await checkPermission(req.user, 'create:snapshots');
-    if (!hasPermission) {
-      return res.status(403).json({ error: 'You dont have the permission to create snapshots' });
-    }
-
-    res.setHeader('Content-Type', 'application/json');
-    const snapshot = await dataHandler.addSnapshot(req.body);
-    res.status(201).json(snapshot);
-  } catch (error) {
-    console.error('Error creating snapshot:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.delete('/:id', async (req, res) => {
-  try {
-    const hasPermission = await checkPermission(req.user, 'delete:snapshots');
-    if (!hasPermission) {
-      return res.status(403).json({ error: 'You dont have the permission to delete snapshots' });
-    }
-
-    res.setHeader('Content-Type', 'application/json');
-    const snapshot = await dataHandler.deleteSnapshot(req.params.id);
-    if (!snapshot) {
-      return res.status(404).json({ error: 'Snapshot not found' });
-    }
-    res.json({ message: 'Snapshot deleted successfully', snapshot });
-  } catch (error) {
-    console.error('Error deleting snapshot:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
+// Get single snapshot
 router.get('/:id', async (req, res) => {
   try {
-    const hasPermission = await checkPermission(req.user, 'view:snapshots');
-    if (!hasPermission) {
-      return res.status(403).json({ error: 'You dont have the permission to view snapshot details' });
-    }
-
-    res.setHeader('Content-Type', 'application/json');
-    const snapshot = await dataHandler.getSnapshotById(req.params.id);
+    const snapshot = await Snapshot.findOne({ id: req.params.id }).lean().exec();
     if (!snapshot) {
       return res.status(404).json({ error: 'Snapshot not found' });
     }
     res.json(snapshot);
   } catch (error) {
     console.error('Error fetching snapshot:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch snapshot' });
+  }
+});
+
+// Create snapshot
+router.post('/', async (req, res) => {
+  try {
+    const snapshot = await dataHandler.addSnapshot(req.body);
+    res.status(201).json(snapshot);
+  } catch (error) {
+    console.error('Error creating snapshot:', error);
+    res.status(500).json({ error: 'Failed to create snapshot' });
+  }
+});
+
+// Delete snapshot
+router.delete('/:id', async (req, res) => {
+  try {
+    const snapshot = await dataHandler.deleteSnapshot(req.params.id);
+    if (!snapshot) {
+      return res.status(404).json({ error: 'Snapshot not found' });
+    }
+    res.json({ message: 'Snapshot deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting snapshot:', error);
+    res.status(500).json({ error: 'Failed to delete snapshot' });
   }
 });
 

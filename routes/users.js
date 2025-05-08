@@ -26,24 +26,32 @@ const setCacheHeaders = (res) => {
 // Get all users with optimization
 router.get('/', async (req, res) => {
   try {
-    console.log('[Users] Fetching all users');
-    
-    // Use lean() for better performance and limit fields
     const users = await User.find({})
       .select('username email role active')
       .lean()
-      .maxTimeMS(2000) // 2 second timeout
       .exec();
 
-    console.log('[Users] Found users:', users.length);
-    setCacheHeaders(res);
     res.json(users);
   } catch (error) {
-    console.error('[Users] Error fetching users:', error);
-    if (error.name === 'MongoTimeoutError') {
-      return res.status(504).json({ error: 'Request timeout - please try again' });
-    }
+    console.error('[Users] Error:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Get single user
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select('username email role active')
+      .lean()
+      .exec();
+      
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
