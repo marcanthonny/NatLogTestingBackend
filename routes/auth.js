@@ -43,8 +43,13 @@ router.post('/login', async (req, res) => {
       { 
         userId: user._id, 
         username: user.username, 
+        email: user.email,
         role: user.role,
-        permissions // Add permissions to token
+        permissions, // Add permissions to token
+        sessionData: {
+          lastActive: new Date(),
+          userAgent: req.headers['user-agent']
+        }
       },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
@@ -62,12 +67,18 @@ router.post('/login', async (req, res) => {
 
     await Session.create(session);
 
+    // Update user's last login
+    await User.findByIdAndUpdate(user._id, {
+      lastLogin: new Date()
+    });
+
     console.log('[Auth] Login successful for user:', username);
     res.json({ 
       success: true,
       token,
       user: {
         username: user.username,
+        email: user.email,
         role: user.role,
         permissions // Send permissions to frontend
       }

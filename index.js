@@ -10,7 +10,6 @@ const dataHandler = require('./utils/dataHandler');
 const batchCorrectionRouter = require('./routes/batchCorrection');
 const limiter = require('./middleware/rateLimit');
 const { startCleanupTask } = require('./utils/sessionManager');
-const session = require('./middleware/session');
 
 console.log('🚀 Starting APL Natlog Backend...');
 
@@ -40,9 +39,6 @@ app.use(cors({
 
 // Apply rate limiting to all routes
 app.use(limiter);
-
-// Add session middleware before routes
-app.use(session);
 
 // Connect to MongoDB with optimized settings for serverless
 mongoose.connect(process.env.MONGODB_URL, {

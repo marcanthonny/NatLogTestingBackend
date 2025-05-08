@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Role = require('../models/Role');
-const Session = require('../models/Session');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -17,12 +16,6 @@ const publicPaths = [
 
 const authMiddleware = async (req, res, next) => {
   try {
-    // Check for session first
-    if (req.session && req.session.user) {
-      req.user = req.session.user;
-      return next();
-    }
-
     // Skip auth for options and public paths
     if (req.method === 'OPTIONS' || publicPaths.some(path => req.path.startsWith(path))) {
       return next();
@@ -36,7 +29,7 @@ const authMiddleware = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Get user with role and permissions
+    // Get fresh user data
     const user = await User.findById(decoded.userId)
       .select('-password')
       .lean();
@@ -45,23 +38,21 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // Get role permissions
+    // Get fresh role permissions
     const role = await Role.findOne({ name: user.role });
     
     // Attach user and permissions to request
     req.user = {
       ...user,
-      permissions: role ? role.permissions : []
+      permissions: role ? role.permissions : [],
+      sessionData: decoded.sessionData // Preserve session data from token
     };
 
-    // Store in session for future requests
-    req.session.user = req.user;
-
-    // Update session last active time
-    await Session.findOneAndUpdate(
-      { userId: user._id },
-      { lastActive: new Date() }
-    );
+    // Check if token needs refresh (optional)
+    if (decoded.iat < Date.now()/1000 - 3600) { // Refresh after 1 hour
+      const newToken = generateToken(req.user);
+      res.setHeader('X-New-Token', newToken);
+    }
 
     next();
   } catch (err) {
@@ -76,4 +67,22 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = { authMiddleware };
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      userId: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      permissions: user.permissions,
+      sessionData: {
+        lastActive: new Date(),
+        userAgent: req.headers['user-agent']
+      }
+    },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+};
+
+module.exports = { authMiddleware, generateToken };
