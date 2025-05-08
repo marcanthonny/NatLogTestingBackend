@@ -1,10 +1,15 @@
 const fs = require('fs').promises;
 const path = require('path');
-const Snapshot = require('../models/Snapshot');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 async function migrateSnapshots() {
   try {
-    console.log('Starting snapshots migration...');
+    console.log('Starting snapshots migration to Supabase...');
     
     // Read snapshots directory
     const snapshotsDir = path.join(__dirname, '../snapshots');
@@ -30,11 +35,30 @@ async function migrateSnapshots() {
         const content = await fs.readFile(filePath, 'utf8');
         const snapshot = JSON.parse(content);
 
-        // Check if snapshot already exists
-        const existing = await Snapshot.findOne({ id: snapshot.id });
-        
+        // Check if snapshot exists in Supabase
+        const { data: existing, error: checkError } = await supabase
+          .from('snapshots')
+          .select('id')
+          .eq('snapshot_id', snapshot.id)
+          .single();
+
+        if (checkError && !checkError.message.includes('No rows found')) {
+          throw checkError;
+        }
+
         if (!existing) {
-          await Snapshot.create(snapshot);
+          const { error: insertError } = await supabase
+            .from('snapshots')
+            .insert({
+              snapshot_id: snapshot.id,
+              name: snapshot.name,
+              date: snapshot.date,
+              week_number: snapshot.weekNumber,
+              ira_stats: snapshot.iraStats,
+              cc_stats: snapshot.ccStats
+            });
+
+          if (insertError) throw insertError;
           migrated++;
           console.log(`✓ Migrated: ${snapshot.name || snapshot.id}`);
         } else {
