@@ -87,7 +87,12 @@ app.use('/api/week-config', authMiddleware, require('./routes/weekConfig'));
 
 // Modify error handler to ensure response
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
 
   // Handle timeouts specifically
   if (err.name === 'TimeoutError') {
@@ -99,7 +104,9 @@ app.use((err, req, res, next) => {
   // Always send a response, even for timeouts
   if (!res.headersSent) {
     res.status(err.status || 500).json({
-      error: err.message || 'Internal Server Error'
+      error: err.message || 'Internal Server Error',
+      path: req.path,
+      timestamp: new Date().toISOString()
     });
   }
 });

@@ -146,18 +146,20 @@ router.post('/admin/login', async (req, res) => {
 // Add logout endpoint
 router.post('/logout', async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(400).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Delete user's session
-    await Session.deleteOne({ userId: decoded.userId });
-
+    // Don't wait for session deletion, just return success
     res.json({ success: true, message: 'Logged out successfully' });
+    
+    // Optionally delete session in background
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        await Session.deleteOne({ userId: decoded.userId }).catch(console.error);
+      } catch (err) {
+        console.error('[Auth] Token verification failed during logout:', err);
+      }
+    }
   } catch (error) {
     console.error('[Auth] Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
