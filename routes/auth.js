@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const authMiddleware = require('../middleware/authMiddleware'); // Adjust the path as necessary
 
 // Regular login endpoint for frontend users (both admin and regular)
 router.post('/login', async (req, res) => {
@@ -162,56 +163,25 @@ router.get('/validate', async (req, res) => {
   }
 });
 
-// Add /me endpoint to auth routes
-router.get('/me', async (req, res) => {
+// Add /me endpoint near the top with other routes
+router.get('/me', authMiddleware, async (req, res) => {
   try {
-    console.log('[Auth] /me request received:', {
-      userId: req.user?.userId,
-      headers: req.headers
-    });
-
-    if (!req.user || !req.user.userId) {
-      console.log('[Auth] No user ID in request');
-      return res.status(401).json({ 
-        error: 'Authentication required',
-        debug: { hasUser: !!req.user }
-      });
+    if (!req.user) {
+      return res.status(401).json({ error: "Authentication required" });
     }
 
     const user = await User.findById(req.user.userId)
       .select('-password')
-      .lean()
       .exec();
     
     if (!user) {
-      console.log('[Auth] User not found:', req.user.userId);
-      return res.status(404).json({ 
-        error: 'User not found',
-        debug: { userId: req.user.userId }
-      });
+      return res.status(404).json({ error: "User not found" });
     }
 
-    console.log('[Auth] User data retrieved successfully:', {
-      userId: user._id,
-      username: user.username
-    });
-
-    res.json({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      isActive: user.isActive
-    });
-
+    res.json(user);
   } catch (error) {
-    console.error('[Auth] Error in /me endpoint:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch user data',
-      debug: error.message
-    });
+    console.error('[Auth] /me error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

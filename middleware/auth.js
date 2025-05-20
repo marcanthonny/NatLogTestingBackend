@@ -10,13 +10,13 @@ const publicPaths = [
   '/admin',
   '/',
   '/api/health'
-];
+]; // Remove /api/auth/me from public paths
 
 const authMiddleware = (req, res, next) => {
-  console.log('[Auth] Checking auth for:', {
+  console.log('[Auth] Processing request:', {
     path: req.path,
     method: req.method,
-    hasAuthHeader: !!req.headers.authorization
+    authHeader: req.headers.authorization ? 'Present' : 'Missing'
   });
 
   // Add CORS headers
@@ -30,9 +30,11 @@ const authMiddleware = (req, res, next) => {
   }
 
   // Check if path is public
-  const isPublicPath = publicPaths.includes(req.path) || req.path.startsWith('/api/auth/');
+  const isPublicPath = publicPaths.includes(req.path) || 
+    (req.path.startsWith('/api/auth/') && !req.path.includes('/me'));
+  
   if (isPublicPath) {
-    console.log('[Auth] Public path accessed:', req.path);
+    console.log('[Auth] Allowing public path:', req.path);
     return next();
   }
 
