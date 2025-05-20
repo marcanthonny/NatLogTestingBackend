@@ -99,4 +99,60 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Add settings update route
+router.put('/settings', async (req, res) => {
+  try {
+    const { username, email, currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password if attempting to change password
+    if (newPassword) {
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    // Update user fields
+    user.username = username;
+    user.email = email;
+    if (newPassword) {
+      user.password = newPassword; // Password will be hashed by the User model
+    }
+
+    await user.save();
+
+    // Return user without password
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+    
+    res.json({ user: updatedUser });
+  } catch (error) {
+    console.error('Settings update error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Add route to get current user data
+router.get('/me', async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ error: 'Failed to fetch user data' });
+  }
+});
+
 module.exports = router;
