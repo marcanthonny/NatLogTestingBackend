@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const authMiddleware = require('../middleware/authMiddleware'); // Adjust the path as necessary
+const authMiddleware = require('../middleware/auth'); // Fix the import path
 
 // Regular login endpoint for frontend users (both admin and regular)
 router.post('/login', async (req, res) => {
