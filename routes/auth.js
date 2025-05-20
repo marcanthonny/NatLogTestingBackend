@@ -165,17 +165,53 @@ router.get('/validate', async (req, res) => {
 // Add /me endpoint to auth routes
 router.get('/me', async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const user = await User.findById(userId).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    console.log('[Auth] /me request received:', {
+      userId: req.user?.userId,
+      headers: req.headers
+    });
+
+    if (!req.user || !req.user.userId) {
+      console.log('[Auth] No user ID in request');
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        debug: { hasUser: !!req.user }
+      });
     }
 
-    res.json(user);
+    const user = await User.findById(req.user.userId)
+      .select('-password')
+      .lean()
+      .exec();
+    
+    if (!user) {
+      console.log('[Auth] User not found:', req.user.userId);
+      return res.status(404).json({ 
+        error: 'User not found',
+        debug: { userId: req.user.userId }
+      });
+    }
+
+    console.log('[Auth] User data retrieved successfully:', {
+      userId: user._id,
+      username: user.username
+    });
+
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isActive: user.isActive
+    });
+
   } catch (error) {
-    console.error('Error fetching user data:', error);
-    res.status(500).json({ error: 'Failed to fetch user data' });
+    console.error('[Auth] Error in /me endpoint:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch user data',
+      debug: error.message
+    });
   }
 });
 
