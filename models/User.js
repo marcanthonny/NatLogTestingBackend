@@ -44,45 +44,29 @@ const userSchema = new mongoose.Schema({
 // Fix compound index syntax
 userSchema.index({ username: 1, role: 1 });
 
-// Fix password comparison method
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    // First try bcrypt compare in case it's a hashed password
-    if (this.password.startsWith('$2')) {
-      return await bcrypt.compare(candidatePassword, this.password);
-    }
-    // Fallback to direct comparison for legacy passwords
-    return candidatePassword === this.password;
-  } catch (error) {
-    console.error('[Auth] Password comparison error:', error);
-    throw new Error('Password comparison failed');
-  }
-};
-
-// Add password hashing on save or update
+// Simplify to a single pre-save hook for password hashing
 userSchema.pre('save', async function(next) {
+  // Only hash if password was modified
   if (!this.isModified('password')) return next();
+  
   try {
-    // Check if password is already hashed
-    if (!this.password.startsWith('$2')) {
-      this.password = await bcrypt.hash(this.password, 10);
-    }
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Pre-save hook for regular save operations
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  try {
+    // Always hash password before saving
     this.password = await bcrypt.hash(this.password, 10);
     next();
   } catch (error) {
     next(error);
   }
 });
+
+// Fix password comparison method
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    console.error('[Auth] Password comparison error:', error);
+    throw new Error('Password comparison failed');
+  }
+};
 
 // Add static method to create user with hashed password
 userSchema.statics.createUser = async function(userData) {

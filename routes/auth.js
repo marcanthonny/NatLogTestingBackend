@@ -195,7 +195,7 @@ router.put('/settings', auth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // If changing password, verify current password
+    // If changing password, verify current password using comparePassword method
     if (newPassword) {
       if (!currentPassword) {
         return res.status(400).json({ error: 'Current password is required to change password' });
@@ -205,6 +205,8 @@ router.put('/settings', auth, async (req, res) => {
       if (!isValid) {
         return res.status(400).json({ error: 'Current password is incorrect' });
       }
+
+      // Use raw password - model's pre-save hook will hash it
       user.password = newPassword;
     }
 
@@ -212,7 +214,7 @@ router.put('/settings', auth, async (req, res) => {
     user.username = username;
     user.email = email;
 
-    await user.save();
+    await user.save(); // This will trigger the pre-save hook to hash password
 
     // Return user without password
     const updatedUser = user.toObject();
