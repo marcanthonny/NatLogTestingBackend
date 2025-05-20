@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Role = require('../models/Role');
-const authMiddleware = require('../middleware/auth');
+const auth = require('../middleware/auth'); // Fix: Update import to match file name
 
 // Get all roles - modified to include better error handling and logging
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     console.log('[Roles] GET / - Fetching all roles');
     const roles = await Role.find().lean();
@@ -17,7 +17,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Change from :id to :name parameter
-router.get('/:name', authMiddleware, async (req, res) => {
+router.get('/:name', auth, async (req, res) => {
   try {
     console.log('[Roles] GET /:name - Fetching role:', req.params.name);
     const role = await Role.findOne({ name: req.params.name });
@@ -30,7 +30,7 @@ router.get('/:name', authMiddleware, async (req, res) => {
 });
 
 // Create new role 
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
     const { name, description, permissions } = req.body;
     if (!name) return res.status(400).json({ error: 'Role name is required' });
@@ -49,7 +49,7 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // Update role - change :id to :name
-router.put('/:name', authMiddleware, async (req, res) => {
+router.put('/:name', auth, async (req, res) => {
   try {
     console.log('[Roles] PUT /:name - Updating role:', req.params.name);
     const { description, permissions } = req.body;
@@ -68,7 +68,7 @@ router.put('/:name', authMiddleware, async (req, res) => {
 });
 
 // Update delete route to use name instead of ID
-router.delete('/:name', authMiddleware, async (req, res) => {
+router.delete('/:name', auth, async (req, res) => {
   try {
     const role = await Role.findOneAndDelete({ name: req.params.name });
     if (!role) return res.status(404).json({ error: 'Role not found' });

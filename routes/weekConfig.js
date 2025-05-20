@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
+const auth = require('../middleware/auth'); // Fix: Update import to match file name
 
 // Apply auth middleware to all routes in this router
-router.use(authMiddleware);
+router.use(auth);
 
 // Remove '/week-config' from the route paths since it will be added when mounting
 router.get('/', async (req, res) => {

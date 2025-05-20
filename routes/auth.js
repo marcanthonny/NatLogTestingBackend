@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const authMiddleware = require('../middleware/auth'); // Fix the import path
+const auth = require('../middleware/auth'); // Fix: Update import to match file name
 
 // Regular login endpoint for frontend users (both admin and regular)
 router.post('/login', async (req, res) => {
@@ -164,7 +164,7 @@ router.get('/validate', async (req, res) => {
 });
 
 // Add /me endpoint near the top with other routes
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', auth, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Authentication required" });
