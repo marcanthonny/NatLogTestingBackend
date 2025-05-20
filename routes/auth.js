@@ -185,4 +185,44 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+router.put('/settings', auth, async (req, res) => {
+  try {
+    const { username, email, currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // If changing password, verify current password
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required to change password' });
+      }
+
+      const isValid = await user.comparePassword(currentPassword);
+      if (!isValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+      user.password = newPassword;
+    }
+
+    // Update other fields
+    user.username = username;
+    user.email = email;
+
+    await user.save();
+
+    // Return user without password
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+    
+    res.json({ user: updatedUser });
+  } catch (error) {
+    console.error('Settings update error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 module.exports = router;
