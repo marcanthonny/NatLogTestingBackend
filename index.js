@@ -9,6 +9,8 @@ const snapshotsRouter = require('./routes/snapshots');
 const authMiddleware = require('./middleware/auth');
 const dataHandler = require('./utils/dataHandler');
 const batchCorrectionRouter = require('./routes/batchCorrection');
+const userRoutes = require('./routes/users');
+const batchCorrectionFormRoutes = require('./routes/batchCorrectionForm');
 
 // Log startup info
 console.log('\n🚀 Starting APL Natlog Backend...');
@@ -177,7 +179,7 @@ app.use('/api/week-config', require('./routes/weekConfig')); // Add this line
 
 // Mount routes with proper prefixes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users')); // Make sure this line exists
+app.use('/api/users', userRoutes);
 app.use('/api/snapshots', require('./routes/snapshots'));
 
 // Add roles route
@@ -300,6 +302,11 @@ app.use((err, req, res, next) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/batch-correction', batchCorrectionFormRoutes);
 
 // Export the Express app for serverless deployment
 module.exports = app;
