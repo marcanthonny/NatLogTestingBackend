@@ -227,4 +227,98 @@ router.put('/settings', auth, async (req, res) => {
   }
 });
 
+// Cross-domain login endpoint
+router.get('/cross-login', async (req, res) => {
+  try {
+    const natlogToken = req.query.token;
+
+    if (!natlogToken) {
+      console.log('[Auth] Cross-login: Missing token');
+      return res.redirect('https://batch-corr-form.vercel.app/login'); // Redirect to login if no token
+    }
+
+    let decoded;
+    try {
+      // Verify the token from the Natlog Portal
+      decoded = jwt.verify(natlogToken, process.env.JWT_SECRET);
+    } catch (err) {
+      console.error('[Auth] Cross-login: Token verification failed:', err.message);
+      return res.redirect('https://batch-corr-form.vercel.app/login'); // Redirect on invalid token
+    }
+
+    const user = await User.findById(decoded.userId).select('+role');
+
+    if (!user || user.role !== 'admin') {
+      console.log('[Auth] Cross-login: User not found or not admin', { userId: decoded.userId, role: user?.role });
+      return res.redirect('https://batch-corr-form.vercel.app/login'); // Redirect if not admin
+    }
+
+    // Generate a new, short-lived token for the Batch Corr Form app
+    const batchCorrToken = jwt.sign(
+      { userId: user._id, username: user.username, role: user.role },
+      process.env.JWT_SECRET, // Use the same secret for simplicity, but ideally a different one
+      { expiresIn: '5m' } // Token expires in 5 minutes
+    );
+
+    console.log('[Auth] Cross-login successful for admin user:', user.username);
+
+    // Redirect to the Batch Corr Form admin page with the new token
+    res.redirect(`https://batch-corr-form.vercel.app/admin?crossToken=${batchCorrToken}`);
+
+  } catch (error) {
+    console.error('[Auth] Cross-login error:', error);
+    res.redirect('https://batch-corr-form.vercel.app/login'); // Redirect on unexpected error
+  }
+});
+
+// Validate cross-domain token
+router.post('/validate-cross-token', async (req, res) => {
+  try {
+    const { crossToken } = req.body;
+
+    if (!crossToken) {
+      console.log('[Auth] Validate Cross-token: Missing token');
+      return res.status(400).json({ valid: false, error: 'Token required' });
+    }
+
+    let decoded;
+    try {
+      // Verify the cross token
+      decoded = jwt.verify(crossToken, process.env.JWT_SECRET);
+    } catch (err) {
+      console.error('[Auth] Validate Cross-token: Verification failed:', err.message);
+      return res.status(401).json({ valid: false, error: 'Invalid or expired token' });
+    }
+
+    const user = await User.findById(decoded.userId).select('+role');
+
+    if (!user || user.role !== 'admin') {
+      console.log('[Auth] Validate Cross-token: User not found or not admin', { userId: decoded.userId, role: user?.role });
+      return res.status(403).json({ valid: false, error: 'Access denied' });
+    }
+
+    // Generate a standard token for the Batch Corr Form app
+    const standardToken = jwt.sign(
+      { userId: user._id, username: user.username, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' } // Standard expiry
+    );
+
+    console.log('[Auth] Validate Cross-token: Successful for user:', user.username);
+
+    res.json({ 
+      valid: true,
+      token: standardToken,
+      user: {
+        username: user.username,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('[Auth] Validate Cross-token error:', error);
+    res.status(500).json({ valid: false, error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
