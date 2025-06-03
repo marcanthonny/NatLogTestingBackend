@@ -140,7 +140,7 @@ app.use(cors({
     'https://aplnatlog-backend.vercel.app',
     'https://natlogportal.vercel.app',
     'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app',
-    'https://batch-correction-form.vercel.app'
+    'https://batch-corr-form.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
