@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Branch = require('../models/Branch');
 
 // Middleware to check if user is admin
 const isAdmin = async (req, res, next) => {
@@ -21,7 +22,10 @@ const isAdmin = async (req, res, next) => {
 router.get('/', async (req, res) => {
   try {
     console.log('[Users] Fetching all users');
-    const users = await User.find({}).select('-password').lean();
+    const users = await User.find({})
+      .select('-password')
+      .populate('branch', 'code name')
+      .lean();
     console.log('[Users] Found users:', users.length);
     res.json(users);
   } catch (error) {
@@ -33,10 +37,23 @@ router.get('/', async (req, res) => {
 // Create new user with proper password hashing
 router.post('/', isAdmin, async (req, res) => {
   try {
-    const { username, password, role, email } = req.body;
+    const { username, password, role, email, branch } = req.body;
     
     if (role !== 'admin' && !email) {
       return res.status(400).json({ error: 'Email required for non-admin users' });
+    }
+
+    // Validate branch assignment for branch role
+    if (role === 'branch' && !branch) {
+      return res.status(400).json({ error: 'Branch assignment required for branch role' });
+    }
+
+    // Verify branch exists if assigned
+    if (branch) {
+      const branchExists = await Branch.findById(branch);
+      if (!branchExists) {
+        return res.status(400).json({ error: 'Invalid branch ID' });
+      }
     }
 
     // Let the User model handle the hashing
@@ -44,7 +61,8 @@ router.post('/', isAdmin, async (req, res) => {
       username, 
       password,
       role,
-      email: email || undefined
+      email: email || undefined,
+      branch: branch || undefined
     });
     await user.save();
     res.status(201).json({ message: 'User created successfully' });
@@ -76,10 +94,28 @@ router.post('/:id/change-password', isAdmin, async (req, res) => {
 // Update user with proper password hashing
 router.put('/:id', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, role, branch } = req.body;
     const updateData = { username, role };
+    
     if (password) {
       updateData.password = password;
+    }
+
+    // Handle branch assignment
+    if (role === 'branch' && !branch) {
+      return res.status(400).json({ error: 'Branch assignment required for branch role' });
+    }
+
+    if (branch) {
+      // Verify branch exists
+      const branchExists = await Branch.findById(branch);
+      if (!branchExists) {
+        return res.status(400).json({ error: 'Invalid branch ID' });
+      }
+      updateData.branch = branch;
+    } else if (role !== 'branch') {
+      // Clear branch assignment for non-branch roles
+      updateData.branch = undefined;
     }
     
     await User.findByIdAndUpdateWithHash(req.params.id, updateData);
@@ -142,7 +178,9 @@ router.put('/settings', async (req, res) => {
 router.get('/me', async (req, res) => {
   try {
     const userId = req.user.userId;
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(userId)
+      .select('-password')
+      .populate('branch', 'code name');
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

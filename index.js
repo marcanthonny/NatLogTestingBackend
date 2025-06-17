@@ -11,6 +11,8 @@ const dataHandler = require('./utils/dataHandler');
 const batchCorrectionRouter = require('./routes/batchCorrection');
 const userRoutes = require('./routes/users');
 const batchCorrectionFormRoutes = require('./routes/batchCorrectionForm');
+const branchRoutes = require('./routes/branches');
+const Branch = require('./models/Branch');
 
 // Log startup info
 console.log('\n🚀 Starting APL Natlog Backend...');
@@ -57,6 +59,16 @@ const initializeDB = async () => {
       host: connection.connection.host,
       state: connection.connection.readyState
     });
+
+    // Initialize branches automatically after successful connection
+    try {
+      console.log('[Server] Initializing default branches...');
+      await Branch.initializeBranches();
+      console.log('[Server] ✅ Default branches initialized successfully!');
+    } catch (branchError) {
+      console.error('[Server] Warning: Branch initialization failed:', branchError.message);
+      // Don't fail the entire startup if branch init fails
+    }
 
     return connection;
   } catch (error) {
@@ -181,6 +193,7 @@ app.use('/api/week-config', require('./routes/weekConfig')); // Add this line
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', userRoutes);
 app.use('/api/snapshots', require('./routes/snapshots'));
+app.use('/api/branches', branchRoutes);
 
 // Add roles route
 app.use('/api/roles', require('./routes/roles'));
@@ -211,6 +224,26 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Get branches info endpoint
+app.get('/api/branches-info', async (req, res) => {
+  try {
+    const branches = await Branch.find({ active: true }).select('code name').lean();
+    res.json({
+      success: true,
+      branches: branches,
+      count: branches.length
+    });
+  } catch (error) {
+    console.error('[Branches Info] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch branches info',
+      branches: [],
+      count: 0
+    });
+  }
+});
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -231,8 +264,29 @@ app.get('/', (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     const status = await dataHandler.getHealthStatus();
+    
+    // Get branch count for additional health info
+    let branchCount = 0;
+    try {
+      branchCount = await Branch.countDocuments();
+    } catch (branchError) {
+      console.error('[Health] Branch count failed:', branchError.message);
+    }
+    
     res.setHeader('Content-Type', 'application/json');
-    res.json(status);
+    res.json({
+      ...status,
+      branches: {
+        count: branchCount,
+        initialized: branchCount > 0
+      },
+      database: {
+        connected: req.dbStatus.connected,
+        state: req.dbStatus.state,
+        name: mongoose.connection.name,
+        host: mongoose.connection.host
+      }
+    });
   } catch (error) {
     console.error('[Health] Check failed:', error);
     res.setHeader('Content-Type', 'application/json');
@@ -243,6 +297,10 @@ app.get('/api/health', async (req, res) => {
       database: {
         connected: false,
         state: 'error'
+      },
+      branches: {
+        count: 0,
+        initialized: false
       }
     });
   }

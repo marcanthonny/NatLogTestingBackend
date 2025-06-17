@@ -27,8 +27,15 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'user', 'viewer'],
+    enum: ['admin', 'user', 'viewer', 'branch'],
     default: 'viewer'
+  },
+  branch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
+    required: function() {
+      return this.role === 'branch'; // Only required for branch users
+    }
   },
   active: {
     type: Boolean,

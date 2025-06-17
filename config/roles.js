@@ -22,6 +22,20 @@ const ROLES = {
       'view:snapshots',
       'view:batches'
     ]
+  },
+  branch: {
+    name: 'branch',
+    description: 'Branch-specific access',
+    permissions: [
+      'view:snapshots',
+      'create:snapshots',
+      'edit:snapshots',
+      'view:batches',
+      'create:batches',
+      'edit:batches',
+      'view:branch-data',
+      'edit:branch-data'
+    ]
   }
 };
 
