@@ -606,11 +606,18 @@
 
         async function loadBranches() {
             try {
-                const response = await fetch(`${API_URL}/api/branches-info`);
+                const response = await fetch(`${API_URL}/api/branches`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 if (response.ok) {
-                    const data = await response.json();
-                    branches = data.branches || [];
+                    const branches = await response.json();
+                    window.branches = branches || []; // Store globally for access
                     populateBranchDropdown();
+                } else {
+                    console.error('Failed to load branches:', response.status);
                 }
             } catch (error) {
                 console.error('Error loading branches:', error);
@@ -619,14 +626,20 @@
 
         function populateBranchDropdown() {
             const branchSelect = document.getElementById('userBranch');
+            if (!branchSelect) return;
+            
             branchSelect.innerHTML = '<option value="">Select a branch</option>';
             
-            branches.forEach(branch => {
-                const option = document.createElement('option');
-                option.value = branch._id;
-                option.textContent = `${branch.code} - ${branch.name}`;
-                branchSelect.appendChild(option);
-            });
+            if (window.branches && window.branches.length > 0) {
+                window.branches.forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch._id;
+                    option.textContent = `${branch.code} - ${branch.name}`;
+                    branchSelect.appendChild(option);
+                });
+            } else {
+                console.log('No branches available for dropdown');
+            }
         }
 
         function renderUsers() {
@@ -651,8 +664,14 @@
             document.getElementById('userId').value = '';
             document.getElementById('userModalTitle').textContent = 'Add User';
             document.getElementById('branchSelection').style.display = 'none';
-            loadBranches(); // Load branches when opening modal
-            userModal.show();
+            
+            // Load branches when opening modal
+            loadBranches().then(() => {
+                userModal.show();
+            }).catch(error => {
+                console.error('Error loading branches for user modal:', error);
+                userModal.show(); // Show modal anyway
+            });
         }
 
         function editUser(id) {
@@ -665,10 +684,13 @@
                 
                 // Load branches and set the selected branch
                 loadBranches().then(() => {
-                    if (user.branch) {
-                        document.getElementById('userBranch').value = user.branch._id;
-                    }
-                    handleRoleChange(); // Show/hide branch selection based on role
+                    // Wait a moment for the dropdown to be populated
+                    setTimeout(() => {
+                        if (user.branch && user.branch._id) {
+                            document.getElementById('userBranch').value = user.branch._id;
+                        }
+                        handleRoleChange(); // Show/hide branch selection based on role
+                    }, 100);
                 });
                 
                 document.getElementById('userModalTitle').textContent = 'Edit User';
@@ -1027,7 +1049,7 @@
                     }
                     
                     loadBranchesForTable();
-                    loadBranches(); // Refresh dropdown
+                    loadBranches(); // Refresh dropdown for user forms
                 } catch (error) {
                     console.error('Error deleting branch:', error);
                     alert('Failed to delete branch: ' + error.message);
@@ -1064,7 +1086,7 @@
                 
                 branchModal.hide();
                 loadBranchesForTable();
-                loadBranches(); // Refresh dropdown
+                loadBranches(); // Refresh dropdown for user forms
             } catch (error) {
                 console.error('Error saving branch:', error);
                 alert(error.message);
@@ -1086,7 +1108,7 @@
                     
                     alert('Default branches initialized successfully!');
                     loadBranchesForTable();
-                    loadBranches(); // Refresh dropdown
+                    loadBranches(); // Refresh dropdown for user forms
                 } catch (error) {
                     console.error('Error initializing branches:', error);
                     alert('Failed to initialize branches: ' + error.message);
