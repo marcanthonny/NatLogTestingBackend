@@ -17,6 +17,7 @@ router.post('/login', async (req, res) => {
     // Debug: Check if user exists
     const user = await User.findOne({ username: username.toLowerCase() })
       .select('+password +role')
+      .populate('branch', 'code name')
       .exec();
     console.log('[Auth] User found:', { exists: !!user, username: username });
     
@@ -46,7 +47,8 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         username: user.username,
-        role: user.role
+        role: user.role,
+        branch: user.branch
       }
     });
 
@@ -87,6 +89,7 @@ router.post('/admin/login', async (req, res) => {
 
     const user = await User.findOne({ username: username.toLowerCase() })
       .select('+password +role')
+      .populate('branch', 'code name')
       .exec();
     
     console.log('[Auth] User lookup result:', { 
@@ -130,7 +133,8 @@ router.post('/admin/login', async (req, res) => {
       token,
       user: {
         username: user.username,
-        role: user.role
+        role: user.role,
+        branch: user.branch
       }
     });
 
@@ -172,6 +176,7 @@ router.get('/me', auth, async (req, res) => {
 
     const user = await User.findById(req.user.userId)
       .select('-password')
+      .populate('branch', 'code name')
       .exec();
     
     if (!user) {
@@ -290,7 +295,7 @@ router.post('/validate-cross-token', async (req, res) => {
       return res.status(401).json({ valid: false, error: 'Invalid or expired token' });
     }
 
-    const user = await User.findById(decoded.userId).select('+role');
+    const user = await User.findById(decoded.userId).select('+role').populate('branch', 'code name');
 
     if (!user || user.role !== 'admin') {
       console.log('[Auth] Validate Cross-token: User not found or not admin', { userId: decoded.userId, role: user?.role });
@@ -311,7 +316,8 @@ router.post('/validate-cross-token', async (req, res) => {
       token: standardToken,
       user: {
         username: user.username,
-        role: user.role
+        role: user.role,
+        branch: user.branch
       }
     });
 
