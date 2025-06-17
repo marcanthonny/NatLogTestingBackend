@@ -152,6 +152,7 @@
                                 <th>Username</th>
                                 <th>Email</th>
                                 <th>Role</th>
+                                <th>Branch</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -179,6 +180,74 @@
                         <tbody id="roleTable">
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branch Management -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Branch Management</h5>
+                <div class="row mb-3">
+                    <div class="col">
+                        <button class="btn btn-primary" onclick="showAddBranchModal()">Add New Branch</button>
+                        <button class="btn btn-success" onclick="initializeDefaultBranches()">Initialize Default Branches</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="branchTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branch Modal -->
+        <div class="modal fade" id="branchModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="branchModalTitle">Add Branch</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="branchForm">
+                            <input type="hidden" id="branchId">
+                            <div class="mb-3">
+                                <label class="form-label">Branch Code</label>
+                                <input type="text" class="form-control" id="branchCode" required>
+                                <small class="text-muted">Unique identifier for the branch</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Branch Name</label>
+                                <input type="text" class="form-control" id="branchName" required>
+                                <small class="text-muted">Full name of the branch</small>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="branchActive" checked>
+                                    <label class="form-check-label" for="branchActive">
+                                        Active
+                                    </label>
+                                </div>
+                                <small class="text-muted">Inactive branches won't appear in user assignments</small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="saveBranch()">Save</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -241,10 +310,19 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Role</label>
-                                <select class="form-select" id="userRole" required>
+                                <select class="form-select" id="userRole" required onchange="handleRoleChange()">
                                     <option value="user">User</option>
                                     <option value="admin">Admin</option>
+                                    <option value="branch">Branch</option>
+                                    <option value="viewer">Viewer</option>
                                 </select>
+                            </div>
+                            <div class="mb-3" id="branchSelection" style="display: none;">
+                                <label class="form-label">Branch</label>
+                                <select class="form-select" id="userBranch">
+                                    <option value="">Select a branch</option>
+                                </select>
+                                <small class="text-muted">Required for branch role users</small>
                             </div>
                         </form>
                     </div>
@@ -296,7 +374,7 @@
         ];
 
         // Move modal initialization to global scope
-        let userModal, roleModal, passwordModal;
+        let userModal, roleModal, passwordModal, branchModal;
 
         // Initialize Bootstrap modal when document is ready
         document.addEventListener('DOMContentLoaded', function() {
@@ -304,6 +382,7 @@
             userModal = new bootstrap.Modal(document.getElementById('userModal'));
             roleModal = new bootstrap.Modal(document.getElementById('roleModal'));
             passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+            branchModal = new bootstrap.Modal(document.getElementById('branchModal'));
             
             // Only load roles if we're authenticated
             if (authToken) {
@@ -386,6 +465,8 @@
             console.log('[Admin] Showing dashboard, loading data...');
             checkStatus();
             loadUsers();
+            loadBranches(); // Load branches for dropdown
+            loadBranchesForTable(); // Load branches for table
             loadRoles(); // Add this line to load roles when dashboard is shown
         }
 
@@ -497,6 +578,7 @@
 
         // User Management
         let users = [];
+        let branches = [];
 
         async function loadUsers() {
             try {
@@ -517,9 +599,34 @@
             } catch (error) {
                 console.error('Error loading users:', error);
                 document.getElementById('userTable').innerHTML = `
-                    <tr><td colspan="3" class="text-danger">Error loading users: ${error.message}</td></tr>
+                    <tr><td colspan="4" class="text-danger">Error loading users: ${error.message}</td></tr>
                 `;
             }
+        }
+
+        async function loadBranches() {
+            try {
+                const response = await fetch(`${API_URL}/api/branches-info`);
+                if (response.ok) {
+                    const data = await response.json();
+                    branches = data.branches || [];
+                    populateBranchDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading branches:', error);
+            }
+        }
+
+        function populateBranchDropdown() {
+            const branchSelect = document.getElementById('userBranch');
+            branchSelect.innerHTML = '<option value="">Select a branch</option>';
+            
+            branches.forEach(branch => {
+                const option = document.createElement('option');
+                option.value = branch._id;
+                option.textContent = `${branch.code} - ${branch.name}`;
+                branchSelect.appendChild(option);
+            });
         }
 
         function renderUsers() {
@@ -529,8 +636,10 @@
                     <td>${user.username}</td>
                     <td>${user.email || 'N/A'}</td>
                     <td>${user.role}</td>
+                    <td>${user.branch ? `${user.branch.code} - ${user.branch.name}` : 'N/A'}</td>
                     <td>
                         <button class="btn btn-sm btn-primary" onclick="editUser('${user._id}')">Edit</button>
+                        <button class="btn btn-sm btn-warning" onclick="showPasswordModal('${user._id}')">Password</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteUser('${user._id}')">Delete</button>
                     </td>
                 </tr>
@@ -541,6 +650,8 @@
             document.getElementById('userForm').reset();
             document.getElementById('userId').value = '';
             document.getElementById('userModalTitle').textContent = 'Add User';
+            document.getElementById('branchSelection').style.display = 'none';
+            loadBranches(); // Load branches when opening modal
             userModal.show();
         }
 
@@ -551,6 +662,15 @@
                 document.getElementById('userUsername').value = user.username;
                 document.getElementById('userEmail').value = user.email || '';
                 document.getElementById('userRole').value = user.role;
+                
+                // Load branches and set the selected branch
+                loadBranches().then(() => {
+                    if (user.branch) {
+                        document.getElementById('userBranch').value = user.branch._id;
+                    }
+                    handleRoleChange(); // Show/hide branch selection based on role
+                });
+                
                 document.getElementById('userModalTitle').textContent = 'Edit User';
                 userModal.show();
             }
@@ -576,15 +696,27 @@
             const email = document.getElementById('userEmail').value;
             const password = document.getElementById('userPassword').value;
             const role = document.getElementById('userRole').value;
+            const branch = document.getElementById('userBranch').value;
+
+            // Validate branch selection for branch role
+            if (role === 'branch' && !branch) {
+                alert('Please select a branch for branch role users');
+                return;
+            }
 
             try {
+                const userData = { username, email, password, role };
+                if (branch) {
+                    userData.branch = branch;
+                }
+
                 const response = await fetch(`${API_URL}/api/users${id ? `/${id}` : ''}`, {
                     method: id ? 'PUT' : 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}` // Make sure this is included
+                        'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ username, email, password, role })
+                    body: JSON.stringify(userData)
                 });
                 
                 if (!response.ok) {
@@ -784,6 +916,182 @@
         function hasPermission(roleName, permission) {
             // Implement permission check logic
             return false; // Default to false until we load actual permissions
+        }
+
+        function handleRoleChange() {
+            const role = document.getElementById('userRole').value;
+            const branchSelection = document.getElementById('branchSelection');
+            
+            if (role === 'branch') {
+                branchSelection.style.display = 'block';
+            } else {
+                branchSelection.style.display = 'none';
+            }
+        }
+
+        // Branch Management
+        async function loadBranchesForTable() {
+            try {
+                const response = await fetch(`${API_URL}/api/branches`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const branches = await response.json();
+                renderBranches(branches);
+            } catch (error) {
+                console.error('Error loading branches:', error);
+                document.getElementById('branchTable').innerHTML = `
+                    <tr><td colspan="5" class="text-danger">Error loading branches: ${error.message}</td></tr>
+                `;
+            }
+        }
+
+        function renderBranches(branches) {
+            const tbody = document.getElementById('branchTable');
+            
+            if (!Array.isArray(branches) || branches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No branches found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = branches.map(branch => `
+                <tr>
+                    <td>${branch.code}</td>
+                    <td>${branch.name}</td>
+                    <td>
+                        <span class="badge ${branch.active ? 'bg-success' : 'bg-secondary'}">
+                            ${branch.active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>${new Date(branch.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editBranch('${branch._id}')">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteBranch('${branch._id}')">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showAddBranchModal() {
+            document.getElementById('branchForm').reset();
+            document.getElementById('branchId').value = '';
+            document.getElementById('branchModalTitle').textContent = 'Add Branch';
+            document.getElementById('branchActive').checked = true;
+            branchModal.show();
+        }
+
+        async function editBranch(id) {
+            try {
+                const response = await fetch(`${API_URL}/api/branches/${id}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch branch');
+                const branch = await response.json();
+                
+                document.getElementById('branchId').value = branch._id;
+                document.getElementById('branchCode').value = branch.code;
+                document.getElementById('branchName').value = branch.name;
+                document.getElementById('branchActive').checked = branch.active;
+                document.getElementById('branchModalTitle').textContent = 'Edit Branch';
+                
+                branchModal.show();
+            } catch (error) {
+                console.error('Error editing branch:', error);
+                alert('Failed to load branch details: ' + error.message);
+            }
+        }
+
+        async function deleteBranch(id) {
+            if (confirm('Are you sure you want to delete this branch? This action cannot be undone.')) {
+                try {
+                    const response = await fetch(`${API_URL}/api/branches/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to delete branch');
+                    }
+                    
+                    loadBranchesForTable();
+                    loadBranches(); // Refresh dropdown
+                } catch (error) {
+                    console.error('Error deleting branch:', error);
+                    alert('Failed to delete branch: ' + error.message);
+                }
+            }
+        }
+
+        async function saveBranch() {
+            const id = document.getElementById('branchId').value;
+            const code = document.getElementById('branchCode').value;
+            const name = document.getElementById('branchName').value;
+            const active = document.getElementById('branchActive').checked;
+
+            if (!code || !name) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const branchData = { code, name, active };
+                const response = await fetch(`${API_URL}/api/branches${id ? `/${id}` : ''}`, {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(branchData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save branch');
+                }
+                
+                branchModal.hide();
+                loadBranchesForTable();
+                loadBranches(); // Refresh dropdown
+            } catch (error) {
+                console.error('Error saving branch:', error);
+                alert(error.message);
+            }
+        }
+
+        async function initializeDefaultBranches() {
+            if (confirm('This will initialize all default APL branches. Continue?')) {
+                try {
+                    const response = await fetch(`${API_URL}/api/branches/initialize`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to initialize branches');
+                    }
+                    
+                    alert('Default branches initialized successfully!');
+                    loadBranchesForTable();
+                    loadBranches(); // Refresh dropdown
+                } catch (error) {
+                    console.error('Error initializing branches:', error);
+                    alert('Failed to initialize branches: ' + error.message);
+                }
+            }
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
