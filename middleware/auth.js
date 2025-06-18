@@ -56,7 +56,11 @@ const authMiddleware = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     console.log('[Auth] Token verified for user:', decoded.username);
-    req.user = decoded;
+    // Always set req.user.id for downstream compatibility
+    req.user = {
+      ...decoded,
+      id: decoded.id || decoded._id,
+    };
     next();
   } catch (err) {
     console.error('[Auth] Token verification failed:', err.message);
