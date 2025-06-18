@@ -12,6 +12,7 @@ const batchCorrectionRouter = require('./routes/batchCorrection');
 const userRoutes = require('./routes/users');
 const batchCorrectionFormRoutes = require('./routes/batchCorrectionForm');
 const branchRoutes = require('./routes/branches');
+const toteFormRoutes = require('./routes/toteForm');
 const Branch = require('./models/Branch');
 
 // Log startup info
@@ -68,6 +69,17 @@ const initializeDB = async () => {
     } catch (branchError) {
       console.error('[Server] Warning: Branch initialization failed:', branchError.message);
       // Don't fail the entire startup if branch init fails
+    }
+
+    // Initialize ToteForm collection
+    try {
+      console.log('[Server] Initializing ToteForm collection...');
+      const ToteForm = require('./models/ToteForm');
+      await ToteForm.createIndexes();
+      console.log('[Server] ✅ ToteForm collection initialized successfully!');
+    } catch (toteFormError) {
+      console.error('[Server] Warning: ToteForm initialization failed:', toteFormError.message);
+      // Don't fail the entire startup if ToteForm init fails
     }
 
     return connection;
@@ -187,7 +199,8 @@ app.use('/api', (req, res, next) => {
 // Protected routes come last
 app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/batch-correction', batchCorrectionRouter);
-app.use('/api/week-config', require('./routes/weekConfig')); // Add this line
+app.use('/api/week-config', require('./routes/weekConfig'));
+app.use('/api/tote-form', toteFormRoutes);
 
 // Mount routes with proper prefixes
 app.use('/api/auth', require('./routes/auth'));

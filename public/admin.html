@@ -667,7 +667,7 @@
             
             // Load branches when opening modal
             loadBranches().then(() => {
-                userModal.show();
+            userModal.show();
             }).catch(error => {
                 console.error('Error loading branches for user modal:', error);
                 userModal.show(); // Show modal anyway
