@@ -174,7 +174,8 @@ router.get('/me', auth, async (req, res) => {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const user = await User.findById(req.user.userId)
+    // Use req.user.id (set by middleware)
+    const user = await User.findById(req.user.id)
       .select('-password')
       .populate('branch', 'code name')
       .exec();
@@ -183,7 +184,15 @@ router.get('/me', auth, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(user);
+    // Return a clean user object
+    res.json({
+      id: user._id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      branch: user.branch, // populated with code and name
+      email: user.email
+    });
   } catch (error) {
     console.error('[Auth] /me error:', error);
     res.status(500).json({ error: 'Internal server error' });
