@@ -6,13 +6,16 @@ const auth = require('../middleware/auth');
 // Submit tote form
 router.post('/', auth, async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized: user info missing' });
+    }
     const { boxCondition, ...formData } = req.body;
     
     const toteForm = new ToteForm({
       boxCondition,
       ...formData,
       userId: req.user.id,
-      userName: req.user.name,
+      userName: req.user.name || req.user.username,
       userRole: req.user.role,
       userBranch: req.user.branch
     });
@@ -21,7 +24,7 @@ router.post('/', auth, async (req, res) => {
     res.status(201).json({ message: 'Form submitted successfully', data: toteForm });
   } catch (error) {
     console.error('Error submitting tote form:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
