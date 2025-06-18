@@ -199,6 +199,15 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+// Test endpoint to verify auth routes are working
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Auth routes are working',
+    timestamp: new Date().toISOString(),
+    path: req.path
+  });
+});
+
 router.put('/settings', auth, async (req, res) => {
   try {
     const { username, email, currentPassword, newPassword } = req.body;

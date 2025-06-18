@@ -185,16 +185,11 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Auth routes must come BEFORE protecting /api routes
+// Auth routes - these handle their own authentication
 app.use('/api/auth', authRoutes);
 
-// AFTER auth routes, then protect other API routes
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth/')) {
-    return next();
-  }
-  authMiddleware(req, res, next);
-});
+// Apply auth middleware to all other /api routes
+app.use('/api', authMiddleware);
 
 // Protected routes come last
 app.use('/api/snapshots', snapshotsRouter);
@@ -203,7 +198,6 @@ app.use('/api/week-config', require('./routes/weekConfig'));
 app.use('/api/tote-form', toteFormRoutes);
 
 // Mount routes with proper prefixes
-app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', userRoutes);
 app.use('/api/snapshots', require('./routes/snapshots'));
 app.use('/api/branches', branchRoutes);
@@ -373,11 +367,6 @@ app.use((err, req, res, next) => {
     timestamp: new Date().toISOString()
   });
 });
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/batch-correction', batchCorrectionFormRoutes);
 
 // Export the Express app for serverless deployment
 module.exports = app;

@@ -31,7 +31,7 @@ const authMiddleware = (req, res, next) => {
 
   // Check if path is public
   const isPublicPath = publicPaths.includes(req.path) || 
-    (req.path.startsWith('/api/auth/') && !req.path.includes('/me'));
+    (req.path.startsWith('/api/auth/') && req.path !== '/api/auth/me');
   
   if (isPublicPath) {
     console.log('[Auth] Allowing public path:', req.path);
@@ -56,10 +56,10 @@ const authMiddleware = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     console.log('[Auth] Token verified for user:', decoded.username);
-    // Always set req.user.id for downstream compatibility
+    // Set req.user with proper id mapping from userId
     req.user = {
       ...decoded,
-      id: decoded.id || decoded._id,
+      id: decoded.userId || decoded.id || decoded._id, // Use userId from JWT payload
     };
     next();
   } catch (err) {
