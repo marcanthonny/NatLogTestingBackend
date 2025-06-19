@@ -191,6 +191,9 @@ app.use('/api/auth', authRoutes);
 // Apply auth middleware to all other /api routes
 app.use('/api', authMiddleware);
 
+// Register access control API
+app.use('/api/access-controls', require('./routes/accessControl'));
+
 // Protected routes come last
 app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/batch-correction', batchCorrectionRouter);
