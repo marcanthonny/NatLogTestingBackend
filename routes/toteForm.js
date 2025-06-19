@@ -50,8 +50,11 @@ router.get('/', auth, async (req, res) => {
         query.userBranch = branch;
       }
     } else if (req.user.role === 'branch') {
-      // Branch users can only see forms from their branch
-      query.userBranch = req.user.branch;
+      if (branch) {
+        query.userBranch = branch;
+      } else {
+        query.userBranch = req.user.branch;
+      }
     }
 
     const forms = await ToteForm.find(query)
