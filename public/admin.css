@@ -1,0 +1,123 @@
+/* General Layout */
+body {
+  background: #181c20;
+  color: #f8f9fa;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 100px auto;
+  background: #23272b;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  padding: 0;
+}
+
+.card {
+  background: #23272b;
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card-title {
+  color: #f8f9fa;
+}
+
+.dashboard-container {
+  margin-top: 40px;
+}
+
+/* Status Indicators */
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+.status-connected { background-color: #28a745; }
+.status-disconnected { background-color: #dc3545; }
+.status-locked { background-color: #ffc107; }
+
+/* Table Styles */
+.table {
+  background: #23272b;
+  color: #f8f9fa;
+}
+.table th, .table td {
+  border-color: #343a40;
+}
+.table thead th {
+  background: #212529;
+  color: #f8f9fa;
+}
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background: #20232a;
+}
+
+/* Buttons */
+.btn-primary {
+  background: #007bff;
+  border: none;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: #0056b3;
+}
+.btn-outline-danger {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+.btn-outline-danger:hover {
+  background: #dc3545;
+  color: #fff;
+}
+
+/* Form Styles */
+.form-control, .form-select {
+  background: #23272b;
+  color: #f8f9fa;
+  border: 1px solid #343a40;
+}
+.form-control:focus, .form-select:focus {
+  background: #23272b;
+  color: #fff;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+.form-label {
+  color: #adb5bd;
+}
+
+/* Modal Styles */
+.modal-content {
+  background: #23272b;
+  color: #f8f9fa;
+  border-radius: 10px;
+}
+
+/* Alerts */
+.alert-danger {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+}
+
+/* Misc */
+pre {
+  background: #181c20;
+  color: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+/* Responsive Tweaks */
+@media (max-width: 768px) {
+  .dashboard-container {
+    margin-top: 20px;
+  }
+  .card {
+    margin-bottom: 20px;
+  }
+} 
