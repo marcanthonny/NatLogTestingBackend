@@ -205,6 +205,7 @@ app.use('/api/tote-form', toteFormRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/snapshots', require('./routes/snapshots'));
 app.use('/api/branches', branchRoutes);
+app.use('/api/batch-correction-form', batchCorrectionFormRoutes);
 
 // Add roles route
 app.use('/api/roles', require('./routes/roles'));
