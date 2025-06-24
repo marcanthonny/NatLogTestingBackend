@@ -6,7 +6,8 @@ const customerController = require('../controllers/customerController');
 const auth = require('../middleware/auth');
 
 // Multer setup for Excel file upload
-defaultUploadDir = path.join(__dirname, '../uploads');
+const isServerless = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+const defaultUploadDir = isServerless ? '/tmp' : path.join(__dirname, '../uploads');
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, defaultUploadDir);
