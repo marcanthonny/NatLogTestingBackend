@@ -173,8 +173,14 @@ app.use(cors({
   credentials: true
 }));
 
-// Handle preflight requests
+// Handle preflight requests BEFORE any auth middleware
 app.options('*', cors());
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 // Only set JSON content type for API routes
 app.use('/api', (req, res, next) => {
