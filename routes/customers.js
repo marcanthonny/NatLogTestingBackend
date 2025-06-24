@@ -23,4 +23,10 @@ router.post('/import', auth(['admin']), upload.single('file'), customerControlle
 // Search customers (autocomplete)
 router.get('/', customerController.searchCustomers);
 
+// Update customer (admin only)
+router.put('/:id', auth(['admin']), customerController.updateCustomer);
+
+// Delete customer (admin only)
+router.delete('/:id', auth(['admin']), customerController.deleteCustomer);
+
 module.exports = router; 

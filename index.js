@@ -13,6 +13,7 @@ const userRoutes = require('./routes/users');
 const batchCorrectionFormRoutes = require('./routes/batchCorrectionForm');
 const branchRoutes = require('./routes/branches');
 const toteFormRoutes = require('./routes/toteForm');
+const customerRoutes = require('./routes/customers');
 const Branch = require('./models/Branch');
 
 // Log startup info
@@ -200,6 +201,7 @@ app.use('/api/snapshots', snapshotsRouter);
 app.use('/api/batch-correction', batchCorrectionRouter);
 app.use('/api/week-config', require('./routes/weekConfig'));
 app.use('/api/tote-form', toteFormRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Mount routes with proper prefixes
 app.use('/api/users', userRoutes);

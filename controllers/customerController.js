@@ -54,4 +54,37 @@ exports.searchCustomers = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to search customers' });
   }
+};
+
+// Update customer
+exports.updateCustomer = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const update = req.body;
+    // Try by _id first, then by customerNumber
+    let customer = await Customer.findByIdAndUpdate(id, update, { new: true });
+    if (!customer) {
+      customer = await Customer.findOneAndUpdate({ customerNumber: id }, update, { new: true });
+    }
+    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    res.json(customer);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update customer' });
+  }
+};
+
+// Delete customer
+exports.deleteCustomer = async (req, res) => {
+  try {
+    const id = req.params.id;
+    // Try by _id first, then by customerNumber
+    let customer = await Customer.findByIdAndDelete(id);
+    if (!customer) {
+      customer = await Customer.findOneAndDelete({ customerNumber: id });
+    }
+    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    res.json({ message: 'Customer deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete customer' });
+  }
 }; 
