@@ -90,6 +90,10 @@ class DataHandler {
   async addSnapshot(snapshot) {
     await this.init();
     try {
+      // Auto-generate a unique id if missing
+      if (!snapshot.id) {
+        snapshot.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      }
       const newSnapshot = new Snapshot(snapshot);
       return await newSnapshot.save();
     } catch (error) {
