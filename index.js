@@ -25,6 +25,32 @@ console.log(`   Time: ${new Date().toISOString()}`);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Configure CORS FIRST - before any other middleware
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5000',
+    'https://aplnatlog-backend.vercel.app',
+    'https://natlogportal.vercel.app',
+    'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app',
+    'https://batch-corr-form.vercel.app',
+    'https://toteform.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+// Handle preflight requests BEFORE any other middleware
+app.options('*', cors());
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 // Initialize MongoDB connection with better error handling
 let dbInitialized = false;
 const MAX_RETRIES = 3;
@@ -155,32 +181,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
-
-// Configure CORS
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5000',
-    'https://aplnatlog-backend.vercel.app',
-    'https://natlogportal.vercel.app',
-    'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app',
-    'https://batch-corr-form.vercel.app',
-    'https://toteform.vercel.app'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-// Handle preflight requests BEFORE any auth middleware
-app.options('*', cors());
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-  next();
-});
 
 // Only set JSON content type for API routes
 app.use('/api', (req, res, next) => {
