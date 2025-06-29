@@ -196,8 +196,14 @@ app.get('/admin', (req, res) => {
 // Auth routes - these handle their own authentication
 app.use('/api/auth', authRoutes);
 
-// Apply auth middleware to all other /api routes
-app.use('/api', authMiddleware);
+// Apply auth middleware to all other /api routes EXCEPT customers
+app.use('/api', (req, res, next) => {
+  // Skip auth middleware for customer routes since they have their own auth
+  if (req.path.startsWith('/customers')) {
+    return next();
+  }
+  return authMiddleware(req, res, next);
+});
 
 // Register access control API
 app.use('/api/access-controls', require('./routes/accessControl'));
