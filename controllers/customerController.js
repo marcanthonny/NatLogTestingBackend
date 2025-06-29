@@ -110,13 +110,36 @@ exports.importCustomers = async (req, res) => {
 exports.searchCustomers = async (req, res) => {
   try {
     const search = req.query.search || '';
-    const customers = await Customer.find({
-      name: { $regex: search, $options: 'i' }
-    })
-      .limit(20)
-      .select('customerNumber name city region country');
-    res.json(customers);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Build query
+    const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+
+    // Get total count for pagination
+    const total = await Customer.countDocuments(query);
+
+    // Get customers with pagination
+    const customers = await Customer.find(query)
+      .skip(skip)
+      .limit(limit)
+      .select('customerNumber name city region country street postalCode telephone')
+      .sort({ name: 1 }); // Sort by name alphabetically
+
+    res.json({
+      customers,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
+    console.error('[Customer Search] Error:', error);
     res.status(500).json({ error: 'Failed to search customers' });
   }
 };
