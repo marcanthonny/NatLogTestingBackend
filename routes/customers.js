@@ -5,6 +5,22 @@ const path = require('path');
 const customerController = require('../controllers/customerController');
 const auth = require('../middleware/auth');
 
+// CORS middleware for customer routes
+const corsMiddleware = (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://toteform.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+};
+
+// Apply CORS middleware to all customer routes
+router.use(corsMiddleware);
+
 // Multer setup for Excel file upload
 const isServerless = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
 const defaultUploadDir = isServerless ? '/tmp' : path.join(__dirname, '../uploads');

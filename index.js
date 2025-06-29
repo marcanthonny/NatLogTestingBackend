@@ -27,26 +27,39 @@ const PORT = process.env.PORT || 5000;
 
 // Configure CORS FIRST - before any other middleware
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5000',
-    'https://aplnatlog-backend.vercel.app',
-    'https://natlogportal.vercel.app',
-    'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app',
-    'https://batch-corr-form.vercel.app',
-    'https://toteform.vercel.app'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5000',
+      'https://aplnatlog-backend.vercel.app',
+      'https://natlogportal.vercel.app',
+      'https://aplnatlog-backend-30wj7ffh1-marcanthonnys-projects.vercel.app',
+      'https://batch-corr-form.vercel.app',
+      'https://toteform.vercel.app'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
 // Handle preflight requests BEFORE any other middleware
 app.options('*', cors());
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
+    return res.sendStatus(200);
   }
   next();
 });
@@ -203,6 +216,19 @@ app.use('/api', (req, res, next) => {
     return next();
   }
   return authMiddleware(req, res, next);
+});
+
+// Add specific CORS handling for customer routes
+app.use('/api/customers', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://toteform.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
 });
 
 // Register access control API
