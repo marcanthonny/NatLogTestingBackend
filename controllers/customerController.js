@@ -16,7 +16,15 @@ exports.importCustomers = async (req, res) => {
     // Check database connection
     if (mongoose.connection.readyState !== 1) {
       console.log('[Customer Import] Database not connected, attempting to connect...');
-      await mongoose.connect(process.env.MONGODB_URL);
+      await mongoose.connect(process.env.MONGODB_URL, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 30000,
+        keepAlive: true,
+        maxPoolSize: 1,
+        family: 4
+      });
     }
 
     const workbook = XLSX.readFile(req.file.path);

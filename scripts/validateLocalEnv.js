@@ -13,7 +13,12 @@ const validateLocalEnv = async () => {
     console.log('[Validate] Checking MongoDB connection...');
     const conn = await mongoose.connect(config.mongoUrl, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 30000,
+      keepAlive: true,
+      maxPoolSize: 1,
+      family: 4
     });
 
     console.log('[Validate] Local MongoDB connected:', {

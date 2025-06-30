@@ -6,7 +6,15 @@ const initializeBranches = async () => {
   try {
     // Connect to MongoDB
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/natlogportal';
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 30000,
+      keepAlive: true,
+      maxPoolSize: 1,
+      family: 4
+    });
     console.log('Connected to MongoDB');
 
     // Initialize default branches

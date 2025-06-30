@@ -4,7 +4,15 @@ const WeekConfig = require('../models/WeekConfig');
 async function setupMongoDB() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URL);
+    await mongoose.connect(process.env.MONGODB_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 30000,
+      keepAlive: true,
+      maxPoolSize: 1,
+      family: 4
+    });
     console.log('Connected to MongoDB');
 
     // Create initial week configuration
