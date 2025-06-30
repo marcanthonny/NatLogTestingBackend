@@ -11,6 +11,10 @@
   ],
   "routes": [
     {
+      "src": "/api/warmup",
+      "dest": "index.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "index.js"
     },
@@ -19,6 +23,11 @@
       "dest": "index.js"
     }
   ],
+  "functions": {
+    "index.js": {
+      "maxDuration": 300
+    }
+  },
   "env": {
     "NODE_ENV": "production"
   }

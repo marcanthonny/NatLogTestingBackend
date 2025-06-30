@@ -66,8 +66,8 @@ app.use((req, res, next) => {
 
 // Initialize MongoDB connection with better error handling
 let dbInitialized = false;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000;
+const MAX_RETRIES = 2; // Reduced for serverless
+const RETRY_DELAY = 2000; // Reduced for serverless
 let retryCount = 0;
 
 const initializeDB = async () => {
@@ -83,13 +83,15 @@ const initializeDB = async () => {
 
     // Wait for connection to be ready
     if (connection.connection.readyState !== 1) {
-      await new Promise((resolve) => {
-        connection.connection.once('connected', resolve);
-        setTimeout(() => {
-          if (connection.connection.readyState !== 1) {
-            throw new Error('Connection timeout');
-          }
-        }, 5000);
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Connection timeout'));
+        }, 10000); // Reduced timeout for serverless
+        
+        connection.connection.once('connected', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
       });
     }
 
@@ -148,10 +150,20 @@ const initializeDB = async () => {
   }
 })();
 
-// Add connection check middleware
+// Add connection check middleware - less aggressive for serverless
 app.use(async (req, res, next) => {
-  if (!dbInitialized && mongoose.connection.readyState !== 1) {
-    await initializeDB();
+  // Only attempt connection for API routes that need it
+  if (req.path.startsWith('/api/') && 
+      !req.path.startsWith('/api/health') && 
+      !req.path.startsWith('/api/test') &&
+      !dbInitialized && 
+      mongoose.connection.readyState !== 1) {
+    try {
+      await initializeDB();
+    } catch (error) {
+      console.error('[Middleware] DB connection failed:', error.message);
+      // Continue without blocking the request
+    }
   }
   next();
 });
@@ -267,6 +279,62 @@ app.use((req, res, next) => {
   next();
 });
 
+// Cron endpoint for keeping serverless function warm
+app.get('/api/cron/warmup', async (req, res) => {
+  try {
+    console.log('[Cron] Warmup request received...');
+    
+    // Quick database check
+    const dbConnected = mongoose.connection.readyState === 1;
+    
+    res.json({
+      status: 'warmed',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: dbConnected,
+        state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState]
+      },
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  } catch (error) {
+    console.error('[Cron] Error:', error.message);
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Warm-up endpoint for serverless
+app.get('/api/warmup', async (req, res) => {
+  try {
+    console.log('[Warmup] Starting warm-up process...');
+    
+    // Attempt database connection
+    if (!dbInitialized && mongoose.connection.readyState !== 1) {
+      await initializeDB();
+    }
+    
+    res.json({
+      status: 'warmed',
+      database: {
+        connected: mongoose.connection.readyState === 1,
+        state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState]
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[Warmup] Error:', error.message);
+    res.status(500).json({
+      status: 'warmup_failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ 
@@ -296,19 +364,15 @@ app.get('/api/branches-info', async (req, res) => {
   }
 });
 
-// Root endpoint
+// Root endpoint - responds quickly without DB connection
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
     message: 'APL Natlog Backend API',
     version: '1.0.0',
     env: process.env.NODE_ENV || 'development',
-    database: {
-      connected: req.dbStatus.connected,
-      state: req.dbStatus.state,
-      name: mongoose.connection.name,
-      host: mongoose.connection.host
-    }
+    serverless: process.env.VERCEL === '1',
+    timestamp: new Date().toISOString()
   });
 });
 

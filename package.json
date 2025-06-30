@@ -9,7 +9,8 @@
     "build": "mkdir -p dist && cp -r snapshots dist/",
     "vercel-build": "node scripts/vercelDeploy.js",
     "migrate-snapshots": "node -e \"require('./utils/migrateSnapshots.js').migrateToIndividualFiles()\"",
-    "init-branches": "node scripts/initBranches.js"
+    "init-branches": "node scripts/initBranches.js",
+    "warmup": "node scripts/warmup.js"
   },
   "dependencies": {
     "axios": "^1.5.0",

@@ -4,8 +4,8 @@ const User = require('../models/User');
 const { loadEnv } = require('./envConfig');
 
 let retryCount = 0;
-const MAX_RETRIES = 5;
-const RETRY_DELAY = 5000;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000;
 let isConnecting = false;
 
 const connectDB = async () => {
@@ -22,22 +22,19 @@ const connectDB = async () => {
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 30000, // Increased for large operations
-      socketTimeoutMS: 60000, // Increased for large operations
-      keepAlive: true, // Enabled for better connection stability
-      keepAliveInitialDelay: 300000, // 5 minutes
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 30000,
+      keepAlive: true,
+      keepAliveInitialDelay: 300000,
       dbName: config.isLocal ? 'aplnatlog-local' : 'aplnatlog-backend',
       retryWrites: true,
       w: 'majority',
       ssl: !config.isLocal,
-      autoIndex: config.isLocal,
-      connectTimeoutMS: 30000, // Increased timeout
-      maxPoolSize: config.isLocal ? 10 : 5, // Increased for serverless
-      minPoolSize: config.isLocal ? 5 : 1,
-      maxIdleTimeMS: 30000, // 30 seconds
-      family: 4, // Force IPv4
-      bufferCommands: false, // Disable buffering for serverless
-      bufferMaxEntries: 0 // Disable buffer for serverless
+      connectTimeoutMS: 10000,
+      maxPoolSize: 1,
+      minPoolSize: 0,
+      maxIdleTimeMS: 10000,
+      family: 4
     };
 
     // Remove any existing listeners to prevent memory leaks
@@ -73,7 +70,13 @@ const connectDB = async () => {
 
     console.log(`[MongoDB] Connecting... (Attempt ${retryCount + 1}/${MAX_RETRIES})`);
     
-    const conn = await mongoose.connect(process.env.MONGODB_URL, options);
+    // Add connection timeout for serverless
+    const connectionPromise = mongoose.connect(process.env.MONGODB_URL, options);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Connection timeout')), 15000); // 15 second timeout
+    });
+    
+    const conn = await Promise.race([connectionPromise, timeoutPromise]);
 
     // Initialize collections if they don't exist
     const collections = await mongoose.connection.db.listCollections().toArray();
