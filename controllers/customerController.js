@@ -10,6 +10,17 @@ exports.importCustomers = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    // Check file size (50MB limit)
+    const maxFileSize = 50 * 1024 * 1024; // 50MB
+    if (req.file.size > maxFileSize) {
+      return res.status(400).json({ 
+        error: 'File too large', 
+        message: 'File size must be less than 50MB',
+        maxSize: '50MB',
+        actualSize: `${(req.file.size / 1024 / 1024).toFixed(2)}MB`
+      });
+    }
+
     console.log('[Customer Import] Starting import process...');
     const startTime = Date.now();
 
@@ -63,10 +74,18 @@ exports.importCustomers = async (req, res) => {
 
     // Use bulk operations for better performance
     let imported = 0;
-    const batchSize = 50; // Reduced batch size for better memory management
+    const batchSize = 25; // Smaller batch size for faster processing
     const totalBatches = Math.ceil(validCustomers.length / batchSize);
+    const maxProcessingTime = 25000; // 25 seconds max processing time
 
     for (let i = 0; i < validCustomers.length; i += batchSize) {
+      // Check if we're approaching timeout
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime > maxProcessingTime) {
+        console.log(`[Customer Import] Approaching timeout, stopping at ${imported} customers`);
+        break;
+      }
+
       const batch = validCustomers.slice(i, i + batchSize);
       const currentBatch = Math.floor(i/batchSize) + 1;
       
@@ -89,10 +108,10 @@ exports.importCustomers = async (req, res) => {
         
         console.log(`[Customer Import] Processed batch ${currentBatch}/${totalBatches} - Imported: ${imported}`);
         
-        // Add small delay between batches to prevent overwhelming the database
-        if (currentBatch < totalBatches) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        // Remove delay to speed up processing
+        // if (currentBatch < totalBatches) {
+        //   await new Promise(resolve => setTimeout(resolve, 100));
+        // }
         
       } catch (batchError) {
         console.error(`[Customer Import] Error in batch ${currentBatch}:`, batchError.message);
@@ -113,12 +132,20 @@ exports.importCustomers = async (req, res) => {
 
     console.log(`[Customer Import] Completed in ${duration}s. Imported ${imported} customers.`);
 
+    // Check if we processed all customers or hit timeout
+    const processedAll = imported === validCustomers.length;
+    const message = processedAll 
+      ? `Imported ${imported} customers successfully in ${duration.toFixed(2)} seconds.`
+      : `Imported ${imported} out of ${validCustomers.length} customers in ${duration.toFixed(2)} seconds. File was too large for complete processing.`;
+
     res.json({ 
-      message: `Imported ${imported} customers successfully in ${duration.toFixed(2)} seconds.`,
+      message,
       imported,
+      totalProcessed: validCustomers.length,
       duration: duration.toFixed(2),
       totalRows: data.length,
-      validRows: validCustomers.length
+      validRows: validCustomers.length,
+      complete: processedAll
     });
   } catch (error) {
     console.error('[Customer Import] Error:', error);
