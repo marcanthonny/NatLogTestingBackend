@@ -1,6 +1,7 @@
 const XLSX = require('xlsx');
 const moment = require('moment');
 const Snapshot = require('../models/Snapshot');
+const connectDB = require('../config/database');
 
 const VALID_BRANCHES = [
   '1982 - PT. APL JAYAPURA',
@@ -82,7 +83,9 @@ const normalizeDataWithFirstRow = (data) => {
   return { ...data, columns: newColumns, data: newData };
 };
 
-const processIraData = (jsonData) => {
+const processIraData = async (jsonData) => {
+  await connectDB();
+
   const columns = jsonData[0];
   const rows = jsonData.slice(1);
   const data = { columns, data: rows };
@@ -145,7 +148,9 @@ const processIraData = (jsonData) => {
   };
 };
 
-const processCcData = (jsonData) => {
+const processCcData = async (jsonData) => {
+  await connectDB();
+
   const columns = jsonData[0];
   const rows = jsonData.slice(1);
   const data = { columns, data: rows };
@@ -211,6 +216,8 @@ const processCcData = (jsonData) => {
 
 const processFiles = async (req, res) => {
   try {
+    await connectDB();
+
     const files = req.files;
     
     if (!files || files.length === 0) {
@@ -231,9 +238,9 @@ const processFiles = async (req, res) => {
       const isCc = file.originalname.toLowerCase().includes('cc');
 
       if (isIra) {
-        iraData = processIraData(jsonData);
+        iraData = await processIraData(jsonData);
       } else if (isCc) {
-        ccData = processCcData(jsonData);
+        ccData = await processCcData(jsonData);
       }
     }
 

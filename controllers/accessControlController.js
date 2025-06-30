@@ -1,7 +1,9 @@
 const AccessControl = require('../models/AccessControl');
+const connectDB = require('../config/database');
 
 exports.getAccessControls = async (req, res) => {
   try {
+    await connectDB();
     let ac = await AccessControl.findOne();
     if (!ac) {
       ac = await AccessControl.create({});
@@ -14,6 +16,7 @@ exports.getAccessControls = async (req, res) => {
 
 exports.updateAccessControls = async (req, res) => {
   try {
+    await connectDB();
     let ac = await AccessControl.findOne();
     if (!ac) {
       ac = await AccessControl.create(req.body);

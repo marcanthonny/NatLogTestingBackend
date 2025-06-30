@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Snapshot = require('../models/Snapshot'); // Assuming you have a Snapshot model
+const connectDB = require('../config/database');
 
 class DataHandler {
   constructor() {
@@ -10,32 +11,7 @@ class DataHandler {
     if (this.initialized) return;
     
     try {
-      if (!mongoose.connection.readyState) {
-        console.log('[MongoDB] Connecting to database...');
-        await mongoose.connect(process.env.MONGODB_URL, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-          serverSelectionTimeoutMS: 10000,
-          socketTimeoutMS: 30000,
-          keepAlive: true,
-          maxPoolSize: 1,
-          family: 4
-        });
-        
-        // Handle serverless connection cleanup
-        mongoose.connection.on('disconnected', () => {
-          console.log('MongoDB disconnected - cleaning up');
-          this.initialized = false;
-          mongoose.connection.removeAllListeners();
-        });
-        
-        // Force close connection after 10s
-        setTimeout(() => {
-          if (mongoose.connection.readyState === 1) {
-            mongoose.connection.close();
-          }
-        }, 10000);
-      }
+      await connectDB();
     } catch (error) {
       console.error('[MongoDB] Connection error:', error);
       this.initialized = false;

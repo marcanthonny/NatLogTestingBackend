@@ -2,10 +2,12 @@ const Customer = require('../models/Customer');
 const XLSX = require('xlsx');
 const fs = require('fs');
 const mongoose = require('mongoose');
+const connectDB = require('../config/database');
 
 // Import customers from Excel file
 exports.importCustomers = async (req, res) => {
   try {
+    await connectDB();
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
@@ -23,20 +25,6 @@ exports.importCustomers = async (req, res) => {
 
     console.log('[Customer Import] Starting import process...');
     const startTime = Date.now();
-
-    // Check database connection
-    if (mongoose.connection.readyState !== 1) {
-      console.log('[Customer Import] Database not connected, attempting to connect...');
-      await mongoose.connect(process.env.MONGODB_URL, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 10000,
-        socketTimeoutMS: 30000,
-        keepAlive: true,
-        maxPoolSize: 1,
-        family: 4
-      });
-    }
 
     const workbook = XLSX.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
