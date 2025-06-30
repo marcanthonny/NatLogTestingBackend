@@ -364,7 +364,16 @@ app.get('/api/branches-info', async (req, res) => {
   }
 });
 
-// Root endpoint - responds quickly without DB connection
+// Simple ping endpoint - no DB connection required
+app.get('/ping', (req, res) => {
+  res.json({
+    status: 'pong',
+    timestamp: new Date().toISOString(),
+    serverless: process.env.VERCEL === '1'
+  });
+});
+
+// Root endpoint - responds immediately without any DB connection
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
@@ -372,7 +381,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     env: process.env.NODE_ENV || 'development',
     serverless: process.env.VERCEL === '1',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    note: 'Database connection may take a moment on cold start'
   });
 });
 

@@ -68,9 +68,9 @@ async function deployToVercel() {
     await mongoose.connect(process.env.MONGODB_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 10000,
-      keepAlive: false,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 30000,
+      keepAlive: true,
       maxPoolSize: 1,
       family: 4
     });

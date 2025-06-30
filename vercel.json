@@ -11,6 +11,10 @@
   ],
   "routes": [
     {
+      "src": "/ping",
+      "dest": "index.js"
+    },
+    {
       "src": "/api/warmup",
       "dest": "index.js"
     },
