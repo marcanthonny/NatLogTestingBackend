@@ -22,17 +22,22 @@ const connectDB = async () => {
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000, // Further reduced for serverless
-      socketTimeoutMS: 10000, // Further reduced for serverless
-      keepAlive: false, // Disabled for serverless
+      serverSelectionTimeoutMS: 30000, // Increased for large operations
+      socketTimeoutMS: 60000, // Increased for large operations
+      keepAlive: true, // Enabled for better connection stability
+      keepAliveInitialDelay: 300000, // 5 minutes
       dbName: config.isLocal ? 'aplnatlog-local' : 'aplnatlog-backend',
       retryWrites: true,
       w: 'majority',
       ssl: !config.isLocal,
       autoIndex: config.isLocal,
-      connectTimeoutMS: 5000,
-      maxPoolSize: config.isLocal ? 10 : 1,
-      family: 4 // Force IPv4
+      connectTimeoutMS: 30000, // Increased timeout
+      maxPoolSize: config.isLocal ? 10 : 5, // Increased for serverless
+      minPoolSize: config.isLocal ? 5 : 1,
+      maxIdleTimeMS: 30000, // 30 seconds
+      family: 4, // Force IPv4
+      bufferCommands: false, // Disable buffering for serverless
+      bufferMaxEntries: 0 // Disable buffer for serverless
     };
 
     // Remove any existing listeners to prevent memory leaks

@@ -1,6 +1,7 @@
 const Customer = require('../models/Customer');
 const XLSX = require('xlsx');
 const fs = require('fs');
+const mongoose = require('mongoose');
 
 // Import customers from Excel file
 exports.importCustomers = async (req, res) => {
@@ -11,6 +12,12 @@ exports.importCustomers = async (req, res) => {
 
     console.log('[Customer Import] Starting import process...');
     const startTime = Date.now();
+
+    // Check database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('[Customer Import] Database not connected, attempting to connect...');
+      await mongoose.connect(process.env.MONGODB_URL);
+    }
 
     const workbook = XLSX.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
@@ -48,24 +55,42 @@ exports.importCustomers = async (req, res) => {
 
     // Use bulk operations for better performance
     let imported = 0;
-    const batchSize = 100; // Process in batches of 100
+    const batchSize = 50; // Reduced batch size for better memory management
+    const totalBatches = Math.ceil(validCustomers.length / batchSize);
 
     for (let i = 0; i < validCustomers.length; i += batchSize) {
       const batch = validCustomers.slice(i, i + batchSize);
+      const currentBatch = Math.floor(i/batchSize) + 1;
       
-      // Use bulkWrite for better performance
-      const bulkOps = batch.map(customer => ({
-        updateOne: {
-          filter: { customerNumber: customer.customerNumber },
-          update: { $set: customer },
-          upsert: true
-        }
-      }));
+      try {
+        // Use bulkWrite for better performance
+        const bulkOps = batch.map(customer => ({
+          updateOne: {
+            filter: { customerNumber: customer.customerNumber },
+            update: { $set: customer },
+            upsert: true
+          }
+        }));
 
-      const result = await Customer.bulkWrite(bulkOps);
-      imported += result.upsertedCount + result.modifiedCount;
-      
-      console.log(`[Customer Import] Processed batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(validCustomers.length/batchSize)}`);
+        const result = await Customer.bulkWrite(bulkOps, { 
+          ordered: false, // Allow unordered operations for better performance
+          w: 1 // Write concern for better performance
+        });
+        
+        imported += result.upsertedCount + result.modifiedCount;
+        
+        console.log(`[Customer Import] Processed batch ${currentBatch}/${totalBatches} - Imported: ${imported}`);
+        
+        // Add small delay between batches to prevent overwhelming the database
+        if (currentBatch < totalBatches) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+      } catch (batchError) {
+        console.error(`[Customer Import] Error in batch ${currentBatch}:`, batchError.message);
+        // Continue with next batch instead of failing completely
+        continue;
+      }
     }
 
     // Remove uploaded file

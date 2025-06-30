@@ -315,45 +315,28 @@ app.get('/', (req, res) => {
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   try {
-    const status = await dataHandler.getHealthStatus();
+    const dbStatus = mongoose.connection.readyState;
+    const dbStatusText = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
     
-    // Get branch count for additional health info
-    let branchCount = 0;
-    try {
-      branchCount = await Branch.countDocuments();
-    } catch (branchError) {
-      console.error('[Health] Branch count failed:', branchError.message);
-    }
-    
-    res.setHeader('Content-Type', 'application/json');
     res.json({
-      ...status,
-      branches: {
-        count: branchCount,
-        initialized: branchCount > 0
-      },
+      status: 'ok',
+      timestamp: new Date().toISOString(),
       database: {
-        connected: req.dbStatus.connected,
-        state: req.dbStatus.state,
-        name: mongoose.connection.name,
-        host: mongoose.connection.host
-      }
+        status: dbStatusText[dbStatus] || 'unknown',
+        readyState: dbStatus
+      },
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
     });
   } catch (error) {
-    console.error('[Health] Check failed:', error);
-    res.setHeader('Content-Type', 'application/json');
     res.status(500).json({
       status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error.message,
-      database: {
-        connected: false,
-        state: 'error'
-      },
-      branches: {
-        count: 0,
-        initialized: false
-      }
+      error: error.message
     });
   }
 });
