@@ -18,7 +18,10 @@ const toteFormSchema = new mongoose.Schema({
     required: true
   },
   nomorDO: {
-    type: String
+    type: String,
+    required: function() {
+      return this.boxCondition === 'Box Kembali';
+    }
   },
   areaPengiriman: {
     type: String
