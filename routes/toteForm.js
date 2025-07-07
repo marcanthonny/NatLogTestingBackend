@@ -97,6 +97,35 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Suggest code boxes for Box Kembali, filtered by branch and search
+router.get('/box-codes', auth, async (req, res) => {
+  try {
+    const { branch, q = '' } = req.query;
+    if (!branch) {
+      return res.status(400).json({ message: 'Branch is required' });
+    }
+    // Find all codeBox from Box Dikirim for this branch
+    const dikirimBoxes = await ToteForm.find({
+      boxCondition: 'Box Dikirim',
+      userBranch: branch,
+      codeBox: { $regex: q, $options: 'i' }
+    }).select('codeBox');
+    // Find all codeBox from Box Kembali for this branch
+    const kembaliBoxes = await ToteForm.find({
+      boxCondition: 'Box Kembali',
+      userBranch: branch
+    }).select('codeBox');
+    const kembaliSet = new Set(kembaliBoxes.map(b => b.codeBox));
+    // Only return codeBox that are in Dikirim but not yet in Kembali
+    const uniqueBoxes = Array.from(new Set(dikirimBoxes.map(b => b.codeBox)))
+      .filter(code => code && !kembaliSet.has(code));
+    res.json({ codeBoxes: uniqueBoxes });
+  } catch (error) {
+    console.error('Error fetching box codes:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get form by ID
 router.get('/:id', auth, async (req, res) => {
   try {
@@ -163,35 +192,6 @@ router.delete('/:id', auth, async (req, res) => {
     res.json({ message: 'Form deleted successfully' });
   } catch (error) {
     console.error('Error deleting tote form:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Suggest code boxes for Box Kembali, filtered by branch and search
-router.get('/box-codes', auth, async (req, res) => {
-  try {
-    const { branch, q = '' } = req.query;
-    if (!branch) {
-      return res.status(400).json({ message: 'Branch is required' });
-    }
-    // Find all codeBox from Box Dikirim for this branch
-    const dikirimBoxes = await ToteForm.find({
-      boxCondition: 'Box Dikirim',
-      userBranch: branch,
-      codeBox: { $regex: q, $options: 'i' }
-    }).select('codeBox');
-    // Find all codeBox from Box Kembali for this branch
-    const kembaliBoxes = await ToteForm.find({
-      boxCondition: 'Box Kembali',
-      userBranch: branch
-    }).select('codeBox');
-    const kembaliSet = new Set(kembaliBoxes.map(b => b.codeBox));
-    // Only return codeBox that are in Dikirim but not yet in Kembali
-    const uniqueBoxes = Array.from(new Set(dikirimBoxes.map(b => b.codeBox)))
-      .filter(code => code && !kembaliSet.has(code));
-    res.json({ codeBoxes: uniqueBoxes });
-  } catch (error) {
-    console.error('Error fetching box codes:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
