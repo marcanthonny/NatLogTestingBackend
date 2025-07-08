@@ -45,11 +45,15 @@ exports.importCustomers = async (req, res) => {
 exports.searchCustomers = async (req, res) => {
   try {
     const search = req.query.search || '';
+    // Support limit parameter, default 20, max 10000
+    let limit = parseInt(req.query.limit, 10);
+    if (isNaN(limit) || limit < 1) limit = 20;
+    if (limit > 10000) limit = 10000;
     const customers = await Customer.find({
       name: { $regex: search, $options: 'i' }
     })
-      .limit(20)
-      .select('customerNumber name city region country');
+      .limit(limit)
+      .select('customerNumber name street city region postalCode country telephone');
     res.json(customers);
   } catch (error) {
     res.status(500).json({ error: 'Failed to search customers' });
