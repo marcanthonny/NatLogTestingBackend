@@ -59,19 +59,36 @@ exports.importCustomers = async (req, res) => {
 exports.searchCustomers = async (req, res) => {
   try {
     const { branchId, query } = req.query;
-    if (!branchId) return res.status(400).json({ error: 'Branch is required' });
-
-    // Search by name or customerNumber, and filter by branch
-    const customers = await Customer.find({
-      branch: branchId,
+    const userRole = req.user?.role; // Get user role from auth middleware
+    
+    // Build search query
+    let searchQuery = {
       $or: [
-        { name: new RegExp(query, 'i') },
-        { customerNumber: new RegExp(query, 'i') }
+        { name: new RegExp(query || '', 'i') },
+        { customerNumber: new RegExp(query || '', 'i') }
       ]
-    }).limit(20);
+    };
+
+    // If user is not admin, require branchId and filter by branch
+    if (userRole !== 'admin') {
+      if (!branchId) {
+        return res.status(400).json({ error: 'Branch is required for non-admin users' });
+      }
+      searchQuery.branch = branchId;
+    }
+    // If user is admin and branchId is provided, filter by branch (optional)
+    else if (branchId) {
+      searchQuery.branch = branchId;
+    }
+
+    // Search customers with populated branch information
+    const customers = await Customer.find(searchQuery)
+      .populate('branch', 'code name')
+      .limit(20);
 
     res.json(customers);
   } catch (err) {
+    console.error('Search customers error:', err);
     res.status(500).json({ error: 'Failed to fetch customers' });
   }
 };

@@ -2,6 +2,20 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// In-memory token blacklist (in production, use Redis or database)
+const tokenBlacklist = new Set();
+
+// Helper function to check if token is blacklisted
+const isTokenBlacklisted = (token) => {
+  return tokenBlacklist.has(token);
+};
+
+// Export function to add tokens to blacklist (used by auth routes)
+const blacklistToken = (token) => {
+  tokenBlacklist.add(token);
+  console.log('[Auth] Token blacklisted');
+};
+
 const publicPaths = [
   '/api/auth/login',
   '/api/auth/admin/login',
@@ -25,6 +39,13 @@ const authMiddleware = (rolesOrReq, res, next) => {
       }
       try {
         const token = authHeader.split(' ')[1];
+        
+        // Check if token is blacklisted
+        if (isTokenBlacklisted(token)) {
+          console.log('[Auth] Blacklisted token detected');
+          return res.status(401).json({ error: 'Token has been invalidated' });
+        }
+        
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = {
           ...decoded,
@@ -78,6 +99,13 @@ const authMiddleware = (rolesOrReq, res, next) => {
 
   try {
     const token = authHeader.split(' ')[1];
+    
+    // Check if token is blacklisted
+    if (isTokenBlacklisted(token)) {
+      console.log('[Auth] Blacklisted token detected');
+      return res.status(401).json({ error: 'Token has been invalidated' });
+    }
+    
     const decoded = jwt.verify(token, JWT_SECRET);
     console.log('[Auth] Token verified for user:', decoded.username);
     req.user = {
@@ -94,4 +122,6 @@ const authMiddleware = (rolesOrReq, res, next) => {
   }
 };
 
+// Export both the middleware and the blacklist function
 module.exports = authMiddleware;
+module.exports.blacklistToken = blacklistToken;

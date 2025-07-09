@@ -207,10 +207,10 @@ app.get('/admin', (req, res) => {
 // Auth routes - these handle their own authentication
 app.use('/api/auth', authRoutes);
 
-// Apply auth middleware to all other /api routes EXCEPT customers and health
+// Apply auth middleware to all other /api routes EXCEPT health
 app.use('/api', (req, res, next) => {
-  // Skip auth middleware for customer routes and health check since they have their own auth
-  if (req.path.startsWith('/customers') || req.path === '/health') {
+  // Skip auth middleware for health check since it's public
+  if (req.path === '/health') {
     return next();
   }
   return authMiddleware(req, res, next);

@@ -21,8 +21,8 @@ const upload = multer({ storage });
 // Admin only: Import customers from Excel
 router.post('/import', auth(['admin']), upload.single('file'), customerController.importCustomers);
 
-// Search customers (autocomplete)
-router.get('/', customerController.searchCustomers);
+// Search customers (autocomplete) - requires authentication
+router.get('/', auth, customerController.searchCustomers);
 
 // Update customer (admin only)
 router.put('/:id', auth(['admin']), customerController.updateCustomer);

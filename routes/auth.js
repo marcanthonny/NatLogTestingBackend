@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth'); // Fix: Update import to match file name
 
+// Get the blacklist function from the middleware
+const { blacklistToken } = auth;
+
 // Regular login endpoint for frontend users (both admin and regular)
 router.post('/login', async (req, res) => {
   try {
@@ -210,6 +213,7 @@ router.put('/settings', auth, async (req, res) => {
   try {
     const { username, email, currentPassword, newPassword } = req.body;
     const userId = req.user.userId;
+    const currentToken = req.headers.authorization?.split(' ')[1]; // Get current token
 
     const user = await User.findById(userId).select('+password');
     if (!user) {
@@ -237,11 +241,19 @@ router.put('/settings', auth, async (req, res) => {
 
     await user.save(); // This will trigger the pre-save hook to hash password
 
+    // If password was changed, blacklist the current token
+    if (newPassword && currentToken) {
+      blacklistToken(currentToken);
+    }
+
     // Return user without password
     const updatedUser = user.toObject();
     delete updatedUser.password;
     
-    res.json({ user: updatedUser });
+    res.json({ 
+      user: updatedUser,
+      tokenInvalidated: !!newPassword // Indicate if token was invalidated
+    });
   } catch (error) {
     console.error('Settings update error:', error);
     res.status(400).json({ error: error.message });
