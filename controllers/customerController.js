@@ -24,12 +24,17 @@ exports.importCustomers = async (req, res) => {
     console.log('Branch names in DB:', Object.keys(branchNameToId));
     console.log('Branch codes in DB:', Object.keys(branchCodeToId));
 
+    // Dynamically detect the branch column header
+    const headers = Object.keys(data[0] || {});
+    let detectedBranchHeader = headers.find(h => /branch|cabang/i.test(h));
+    console.log('Detected branch header:', detectedBranchHeader);
+
     let imported = 0;
     for (const row of data) {
       if (!row['No Cust'] || !row['Name']) continue;
       let branchId = null;
-      // Accept multiple possible column names for branch
-      let branchValue = row['Branch'] || row['BRANCH'] || row['Cabang'] || row['KODE CABANG'];
+      // Accept multiple possible column names for branch, or detected header
+      let branchValue = row['Branch'] || row['BRANCH'] || row['Cabang'] || row['KODE CABANG'] || (detectedBranchHeader && row[detectedBranchHeader]);
       if (branchValue) {
         const branchKey = String(branchValue).trim().toLowerCase();
         branchId = branchNameToId[branchKey] || branchCodeToId[branchKey] || null;
