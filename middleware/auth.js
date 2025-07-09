@@ -8,8 +8,8 @@ const isTokenIssuedBeforePasswordChange = async (decoded) => {
   try {
     const user = await User.findById(decoded.userId).select('passwordChangedAt');
     if (!user) return false;
-    
-    // If token was issued before password change, it's invalid
+    // If passwordChangedAt is missing, treat as never changed (token always valid)
+    if (!user.passwordChangedAt) return false;
     const tokenIssuedAt = new Date(decoded.iat * 1000); // Convert JWT iat to Date
     return tokenIssuedAt < user.passwordChangedAt;
   } catch (error) {
