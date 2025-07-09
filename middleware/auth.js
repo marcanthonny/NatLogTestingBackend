@@ -25,9 +25,8 @@ const publicPaths = [
   '/api/auth/validate',
   '/admin',
   '/',
-  '/api/health',
-  '/api/customers'
-]; // Remove /api/auth/me from public paths
+  '/api/health'
+]; // Remove /api/customers from public paths
 
 const authMiddleware = (rolesOrReq, res, next) => {
   // If called as auth(['admin']), return a middleware
