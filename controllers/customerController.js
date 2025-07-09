@@ -1,3 +1,5 @@
+const XLSX = require('xlsx');
+const fs = require('fs');
 const Customer = require('../models/Customer');
 
 exports.importCustomers = async (req, res) => {

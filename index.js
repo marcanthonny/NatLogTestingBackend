@@ -137,10 +137,15 @@ const initializeDB = async () => {
 
 // Add connection check middleware
 app.use(async (req, res, next) => {
-  if (!dbInitialized && mongoose.connection.readyState !== 1) {
-    await initializeDB();
+  try {
+    if (!dbInitialized && mongoose.connection.readyState !== 1) {
+      await initializeDB();
+    }
+    next();
+  } catch (error) {
+    console.error('[Connection Check] Error:', error);
+    next(); // Continue even if DB init fails
   }
-  next();
 });
 
 // Add detailed connection status to middleware
@@ -161,9 +166,15 @@ app.use((req, res, next) => {
 // Enhanced error handling middleware for serverless
 app.use((err, req, res, next) => {
   console.error('Global error handler caught:', err);
+  console.error('Error stack:', err.stack);
+  console.error('Request path:', req.path);
+  console.error('Request method:', req.method);
+  
   res.status(500).json({ 
     error: 'Server error',
     message: err.message,
+    path: req.path,
+    method: req.method,
     stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
   });
 });
@@ -287,49 +298,20 @@ app.get('/', (req, res) => {
 });
 
 // Health check endpoint
-app.get('/api/health', async (req, res) => {
-  try {
-    const status = await dataHandler.getHealthStatus();
-    
-    // Get branch count for additional health info
-    let branchCount = 0;
-    try {
-      branchCount = await Branch.countDocuments();
-    } catch (branchError) {
-      console.error('[Health] Branch count failed:', branchError.message);
+app.get('/api/health', (req, res) => {
+  const mongoState = mongoose.connection.readyState;
+  const isHealthy = mongoState === 1 && dbInitialized;
+  
+  res.status(isHealthy ? 200 : 503).json({ 
+    status: isHealthy ? 'ok' : 'unhealthy',
+    timestamp: new Date().toISOString(),
+    message: isHealthy ? 'API is running' : 'API is experiencing issues',
+    database: {
+      connected: mongoState === 1,
+      state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoState],
+      initialized: dbInitialized
     }
-    
-    res.setHeader('Content-Type', 'application/json');
-    res.json({
-      ...status,
-      branches: {
-        count: branchCount,
-        initialized: branchCount > 0
-      },
-      database: {
-        connected: req.dbStatus.connected,
-        state: req.dbStatus.state,
-        name: mongoose.connection.name,
-        host: mongoose.connection.host
-      }
-    });
-  } catch (error) {
-    console.error('[Health] Check failed:', error);
-    res.setHeader('Content-Type', 'application/json');
-    res.status(500).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error.message,
-      database: {
-        connected: false,
-        state: 'error'
-      },
-      branches: {
-        count: 0,
-        initialized: false
-      }
-    });
-  }
+  });
 });
 
 // Optimized file upload route for serverless
@@ -390,6 +372,14 @@ app.use((err, req, res, next) => {
 // Export the Express app for serverless deployment
 module.exports = app;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Only start the server if this file is run directly (not imported)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
+  }).on('error', (error) => {
+    console.error('❌ Server failed to start:', error);
+    process.exit(1);
+  });
+}
