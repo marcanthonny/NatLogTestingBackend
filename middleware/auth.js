@@ -29,7 +29,7 @@ const publicPaths = [
   '/api/customers'
 ]; // Remove /api/auth/me from public paths
 
-const authMiddleware = (rolesOrReq, res, next) => {
+const authMiddleware = async (rolesOrReq, res, next) => {
   // If called as auth(['admin']), return a middleware
   if (Array.isArray(rolesOrReq)) {
     const roles = rolesOrReq;
