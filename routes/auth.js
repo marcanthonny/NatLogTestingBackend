@@ -37,8 +37,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      process.env.JWT_SECRET
     );
 
     console.log('[Auth] Login successful for user:', username);
@@ -124,8 +123,7 @@ router.post('/admin/login', async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      process.env.JWT_SECRET
     );
 
     res.json({ 
@@ -323,8 +321,7 @@ router.post('/validate-cross-token', async (req, res) => {
     // Generate a standard token for the Batch Corr Form app
     const standardToken = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' } // Standard expiry
+      process.env.JWT_SECRET
     );
 
     console.log('[Auth] Validate Cross-token: Successful for user:', user.username);
