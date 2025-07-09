@@ -46,7 +46,7 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  passwordChangedAt: { type: Date, default: Date.now } // Track password changes
+  passwordChangedAt: { type: Date, default: null } // Track password changes, default null
 });
 
 // Fix compound index syntax
@@ -56,14 +56,13 @@ userSchema.index({ username: 1, role: 1 });
 userSchema.pre('save', async function(next) {
   // Only hash if password was modified
   if (!this.isModified('password')) return next();
-  
   try {
     // Always hash password before saving
     this.password = await bcrypt.hash(this.password, 10);
-    
-    // Update passwordChangedAt timestamp (subtract 1 second to ensure token issued before this is invalid)
-    this.passwordChangedAt = new Date(Date.now() - 1000);
-    
+    // Only set passwordChangedAt if the user already exists (not on creation)
+    if (!this.isNew) {
+      this.passwordChangedAt = new Date(Date.now() - 1000);
+    }
     next();
   } catch (error) {
     next(error);
