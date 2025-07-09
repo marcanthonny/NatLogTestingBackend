@@ -1,19 +1,21 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// In-memory token blacklist (in production, use Redis or database)
-const tokenBlacklist = new Set();
-
-// Helper function to check if token is blacklisted
-const isTokenBlacklisted = (token) => {
-  return tokenBlacklist.has(token);
-};
-
-// Export function to add tokens to blacklist (used by auth routes)
-const blacklistToken = (token) => {
-  tokenBlacklist.add(token);
-  console.log('[Auth] Token blacklisted');
+// Helper function to check if token was issued before password change
+const isTokenIssuedBeforePasswordChange = async (decoded) => {
+  try {
+    const user = await User.findById(decoded.userId).select('passwordChangedAt');
+    if (!user) return false;
+    
+    // If token was issued before password change, it's invalid
+    const tokenIssuedAt = new Date(decoded.iat * 1000); // Convert JWT iat to Date
+    return tokenIssuedAt < user.passwordChangedAt;
+  } catch (error) {
+    console.error('[Auth] Error checking password change:', error);
+    return false;
+  }
 };
 
 const publicPaths = [
@@ -31,7 +33,7 @@ const authMiddleware = (rolesOrReq, res, next) => {
   // If called as auth(['admin']), return a middleware
   if (Array.isArray(rolesOrReq)) {
     const roles = rolesOrReq;
-    return (req, res, next) => {
+    return async (req, res, next) => {
       // Standard auth logic
       const authHeader = req.headers && req.headers.authorization;
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -39,14 +41,15 @@ const authMiddleware = (rolesOrReq, res, next) => {
       }
       try {
         const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
         
-        // Check if token is blacklisted
-        if (isTokenBlacklisted(token)) {
-          console.log('[Auth] Blacklisted token detected');
-          return res.status(401).json({ error: 'Token has been invalidated' });
+        // Check if token was issued before password change
+        const isInvalid = await isTokenIssuedBeforePasswordChange(decoded);
+        if (isInvalid) {
+          console.log('[Auth] Token issued before password change, invalidating');
+          return res.status(401).json({ error: 'Token invalidated due to password change' });
         }
         
-        const decoded = jwt.verify(token, JWT_SECRET);
         req.user = {
           ...decoded,
           id: decoded.userId || decoded.id || decoded._id,
@@ -99,14 +102,15 @@ const authMiddleware = (rolesOrReq, res, next) => {
 
   try {
     const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Check if token is blacklisted
-    if (isTokenBlacklisted(token)) {
-      console.log('[Auth] Blacklisted token detected');
-      return res.status(401).json({ error: 'Token has been invalidated' });
+    // Check if token was issued before password change
+    const isInvalid = await isTokenIssuedBeforePasswordChange(decoded);
+    if (isInvalid) {
+      console.log('[Auth] Token issued before password change, invalidating');
+      return res.status(401).json({ error: 'Token invalidated due to password change' });
     }
     
-    const decoded = jwt.verify(token, JWT_SECRET);
     console.log('[Auth] Token verified for user:', decoded.username);
     req.user = {
       ...decoded,
@@ -122,6 +126,5 @@ const authMiddleware = (rolesOrReq, res, next) => {
   }
 };
 
-// Export both the middleware and the blacklist function
+// Export the middleware (no longer need blacklist function)
 module.exports = authMiddleware;
-module.exports.blacklistToken = blacklistToken;

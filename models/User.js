@@ -45,7 +45,8 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  passwordChangedAt: { type: Date, default: Date.now } // Track password changes
 });
 
 // Fix compound index syntax
@@ -59,6 +60,10 @@ userSchema.pre('save', async function(next) {
   try {
     // Always hash password before saving
     this.password = await bcrypt.hash(this.password, 10);
+    
+    // Update passwordChangedAt timestamp (subtract 1 second to ensure token issued before this is invalid)
+    this.passwordChangedAt = new Date(Date.now() - 1000);
+    
     next();
   } catch (error) {
     next(error);
