@@ -12,13 +12,17 @@ exports.importCustomers = async (req, res) => {
     const sheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json(sheet);
 
-    // Load all branches and create a name->_id map (case-insensitive)
+    // Load all branches and create name/code -> _id maps (case-insensitive)
     const Branch = require('../models/Branch');
     const branches = await Branch.find({});
     const branchNameToId = {};
+    const branchCodeToId = {};
     branches.forEach(b => {
       branchNameToId[b.name.trim().toLowerCase()] = b._id;
+      if (b.code) branchCodeToId[b.code.trim().toLowerCase()] = b._id;
     });
+    console.log('Branch names in DB:', Object.keys(branchNameToId));
+    console.log('Branch codes in DB:', Object.keys(branchCodeToId));
 
     let imported = 0;
     for (const row of data) {
@@ -27,8 +31,9 @@ exports.importCustomers = async (req, res) => {
       // Accept multiple possible column names for branch
       let branchValue = row['Branch'] || row['BRANCH'] || row['Cabang'] || row['KODE CABANG'];
       if (branchValue) {
-        const branchName = String(branchValue).trim().toLowerCase();
-        branchId = branchNameToId[branchName] || null;
+        const branchKey = String(branchValue).trim().toLowerCase();
+        branchId = branchNameToId[branchKey] || branchCodeToId[branchKey] || null;
+        console.log(`Excel branch value: '${branchValue}' (key: '${branchKey}') -> branchId: ${branchId}`);
       }
       await Customer.findOneAndUpdate(
         { customerNumber: String(row['No Cust']) },
