@@ -75,3 +75,42 @@ exports.searchCustomers = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch customers' });
   }
 };
+
+exports.updateCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const customer = await Customer.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    res.json(customer);
+  } catch (error) {
+    console.error('Update customer error:', error);
+    res.status(500).json({ error: 'Failed to update customer' });
+  }
+};
+
+exports.deleteCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const customer = await Customer.findByIdAndDelete(id);
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    res.json({ message: 'Customer deleted successfully' });
+  } catch (error) {
+    console.error('Delete customer error:', error);
+    res.status(500).json({ error: 'Failed to delete customer' });
+  }
+};
