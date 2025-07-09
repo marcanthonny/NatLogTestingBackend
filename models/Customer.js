@@ -9,6 +9,7 @@ const customerSchema = new mongoose.Schema({
   postalCode: { type: String },
   country: { type: String },
   telephone: { type: String },
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }, // Branch reference
   // Add more fields as needed
 }, {
   timestamps: true

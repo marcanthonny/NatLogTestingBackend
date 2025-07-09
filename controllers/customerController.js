@@ -1,8 +1,5 @@
 const Customer = require('../models/Customer');
-const XLSX = require('xlsx');
-const fs = require('fs');
 
-// Import customers from Excel file
 exports.importCustomers = async (req, res) => {
   try {
     if (!req.file) {
@@ -13,9 +10,24 @@ exports.importCustomers = async (req, res) => {
     const sheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json(sheet);
 
+    // Load all branches and create a name->_id map (case-insensitive)
+    const Branch = require('../models/Branch');
+    const branches = await Branch.find({});
+    const branchNameToId = {};
+    branches.forEach(b => {
+      branchNameToId[b.name.trim().toLowerCase()] = b._id;
+    });
+
     let imported = 0;
     for (const row of data) {
       if (!row['No Cust'] || !row['Name']) continue;
+      let branchId = null;
+      // Accept multiple possible column names for branch
+      let branchValue = row['Branch'] || row['BRANCH'] || row['Cabang'] || row['KODE CABANG'];
+      if (branchValue) {
+        const branchName = String(branchValue).trim().toLowerCase();
+        branchId = branchNameToId[branchName] || null;
+      }
       await Customer.findOneAndUpdate(
         { customerNumber: String(row['No Cust']) },
         {
@@ -26,7 +38,8 @@ exports.importCustomers = async (req, res) => {
           region: row['Region'] || '',
           postalCode: row['Postal code'] || '',
           country: row['Country'] || '',
-          telephone: row['Telephone'] || ''
+          telephone: row['Telephone'] || '',
+          branch: branchId
         },
         { upsert: true, new: true }
       );
@@ -41,54 +54,22 @@ exports.importCustomers = async (req, res) => {
   }
 };
 
-// Search customers for autocomplete
 exports.searchCustomers = async (req, res) => {
   try {
-    const search = req.query.search || '';
-    // Support limit parameter, default 20, max 10000
-    let limit = parseInt(req.query.limit, 10);
-    if (isNaN(limit) || limit < 1) limit = 20;
-    if (limit > 10000) limit = 10000;
+    const { branchId, query } = req.query;
+    if (!branchId) return res.status(400).json({ error: 'Branch is required' });
+
+    // Search by name or customerNumber, and filter by branch
     const customers = await Customer.find({
-      name: { $regex: search, $options: 'i' }
-    })
-      .limit(limit)
-      .select('customerNumber name street city region postalCode country telephone');
+      branch: branchId,
+      $or: [
+        { name: new RegExp(query, 'i') },
+        { customerNumber: new RegExp(query, 'i') }
+      ]
+    }).limit(20);
+
     res.json(customers);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to search customers' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch customers' });
   }
 };
-
-// Update customer
-exports.updateCustomer = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const update = req.body;
-    // Try by _id first, then by customerNumber
-    let customer = await Customer.findByIdAndUpdate(id, update, { new: true });
-    if (!customer) {
-      customer = await Customer.findOneAndUpdate({ customerNumber: id }, update, { new: true });
-    }
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
-    res.json(customer);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update customer' });
-  }
-};
-
-// Delete customer
-exports.deleteCustomer = async (req, res) => {
-  try {
-    const id = req.params.id;
-    // Try by _id first, then by customerNumber
-    let customer = await Customer.findByIdAndDelete(id);
-    if (!customer) {
-      customer = await Customer.findOneAndDelete({ customerNumber: id });
-    }
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
-    res.json({ message: 'Customer deleted' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete customer' });
-  }
-}; 
