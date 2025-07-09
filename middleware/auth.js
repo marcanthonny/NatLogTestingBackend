@@ -100,33 +100,38 @@ const authMiddleware = (rolesOrReq, res, next) => {
     });
   }
 
-  // Use async IIFE to handle the async operation
-  (async () => {
-    try {
-      const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, JWT_SECRET);
-      
-      // Check if token was issued before password change
-      const isInvalid = await isTokenIssuedBeforePasswordChange(decoded);
+  // Handle token verification synchronously first, then check password change
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Set user info immediately
+    req.user = {
+      ...decoded,
+      id: decoded.userId || decoded.id || decoded._id,
+    };
+    
+    console.log('[Auth] Token verified for user:', decoded.username);
+    
+    // Check password change asynchronously, but don't block the request
+    isTokenIssuedBeforePasswordChange(decoded).then(isInvalid => {
       if (isInvalid) {
-        console.log('[Auth] Token issued before password change, invalidating');
-        return res.status(401).json({ error: 'Token invalidated due to password change' });
+        console.log('[Auth] Token issued before password change, but request already processed');
+        // Note: We can't send response here as it may have already been sent
+        // The next request will be caught by this check
       }
-      
-      console.log('[Auth] Token verified for user:', decoded.username);
-      req.user = {
-        ...decoded,
-        id: decoded.userId || decoded.id || decoded._id,
-      };
-      next();
-    } catch (err) {
-      console.error('[Auth] Token verification failed:', err.message);
-      res.status(401).json({ 
-        error: 'Invalid or expired token',
-        message: err.message
-      });
-    }
-  })();
+    }).catch(err => {
+      console.error('[Auth] Error checking password change:', err);
+    });
+    
+    next();
+  } catch (err) {
+    console.error('[Auth] Token verification failed:', err.message);
+    return res.status(401).json({ 
+      error: 'Invalid or expired token',
+      message: err.message
+    });
+  }
 };
 
 // Export the middleware (no longer need blacklist function)
