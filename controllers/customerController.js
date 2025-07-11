@@ -71,6 +71,9 @@ exports.importCustomers = async (req, res) => {
 exports.searchCustomers = async (req, res) => {
   try {
     const { branchId, query } = req.query;
+    let page = parseInt(req.query.page, 10) || 1;
+    let limit = parseInt(req.query.limit, 10) || 20;
+    if (limit > 1000) limit = 1000;
     const userRole = req.user?.role; // Get user role from auth middleware
     
     // Build search query
@@ -93,12 +96,20 @@ exports.searchCustomers = async (req, res) => {
       searchQuery.branch = branchId;
     }
 
-    // Search customers with populated branch information
+    // Pagination
+    const total = await Customer.countDocuments(searchQuery);
     const customers = await Customer.find(searchQuery)
       .populate('branch', 'code name')
-      .limit(20);
+      .skip((page - 1) * limit)
+      .limit(limit);
 
-    res.json(customers);
+    res.json({
+      customers,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      limit
+    });
   } catch (err) {
     console.error('Search customers error:', err);
     res.status(500).json({ error: 'Failed to fetch customers' });
