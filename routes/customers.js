@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Admin only: Import customers from Excel
-router.post('/import', auth(['admin']), upload.single('file'), customerController.importCustomers);
+router.post('/import', auth(['admin']), upload.array('files', 50), customerController.importCustomers);
 
 // Search customers (autocomplete) - requires authentication
 router.get('/', auth, customerController.searchCustomers);
